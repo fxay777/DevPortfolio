@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Storm Shop | Acessórios para o seu setup</title>
+<meta name="description" content="Storm Shop: loja fictícia de acessórios tech, criada como projeto de demonstração.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#05070d;--panel:#0d1424;--line:#1d2842;--text:#e8eefc;--muted:#8d9bbd;--volt:#ffd23f;--cloud:#5b7cff;--display:'Chakra Petch',system-ui,sans-serif;--body:'DM Sans',system-ui,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:radial-gradient(900px 500px at 80% -10%,#18264a,transparent),var(--bg);color:var(--text);font:400 1rem/1.6 var(--body);min-height:100vh}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--volt);outline-offset:2px}
+.wrap{width:min(1150px,92%);margin:0 auto}
+#bolt{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:50;opacity:0;transition:opacity .5s}
+#bolt.on{opacity:1;transition:none}
+.demo{background:var(--volt);color:#161100;text-align:center;font-size:.85rem;padding:6px 10px;font-weight:500}
+.demo a{color:inherit}
+header{position:sticky;top:0;z-index:20;background:rgba(5,7,13,.85);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+header .wrap{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 0}
+.brand{font:700 1.5rem var(--display);letter-spacing:.02em}
+.brand i{color:var(--volt);font-style:normal}
+.cartbtn{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 16px;cursor:pointer;display:flex;gap:10px;align-items:center;transition:border-color .2s}
+.cartbtn:hover{border-color:var(--volt)}
+.count{background:var(--volt);color:#161100;border-radius:999px;min-width:24px;height:24px;display:grid;place-items:center;font-weight:700;font-size:.85rem}
+.hero{padding:70px 0 30px}
+.hero h1{font:700 clamp(2.6rem,8vw,5.6rem)/.95 var(--display);max-width:12ch}
+.hero p{color:var(--muted);max-width:46ch;margin-top:18px}
+.tools{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:34px 0 26px}
+.chips{display:flex;gap:8px;flex-wrap:wrap;flex:1}
+.chip{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:8px 18px;cursor:pointer;transition:all .2s}
+.chip:hover{border-color:var(--cloud)}
+.chip[aria-pressed=true]{background:var(--volt);border-color:var(--volt);color:#161100;font-weight:700}
+.field{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 14px}
+.field option{background:var(--panel)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:22px;padding-bottom:90px;perspective:1000px}
+.prod{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px;display:flex;flex-direction:column;transition:transform .2s ease-out,border-color .2s;transform-style:preserve-3d}
+.prod:hover{border-color:var(--cloud)}
+.art{height:150px;border-radius:12px;display:grid;place-items:center;font-size:4rem;margin-bottom:14px;background:radial-gradient(circle at 30% 20%,var(--c),#0a0f1d 75%);transform:translateZ(24px)}
+.prod h3{font:600 1.15rem var(--display)}
+.prod small{color:var(--muted)}
+.price{font:700 1.3rem var(--display);margin:10px 0 14px;color:var(--volt)}
+.add{margin-top:auto;background:var(--volt);color:#161100;border:0;border-radius:10px;padding:11px;font-weight:700;cursor:pointer;transition:transform .15s}
+.add:active{transform:scale(.96)}
+.empty{grid-column:1/-1;color:var(--muted);padding:40px 0}
+.shade{position:fixed;inset:0;background:rgba(0,0,0,.6);opacity:0;pointer-events:none;transition:opacity .25s;z-index:30}
+.shade.open{opacity:1;pointer-events:auto}
+aside{position:fixed;top:0;right:0;bottom:0;width:min(420px,100%);background:#090e1b;border-left:1px solid var(--line);z-index:40;transform:translateX(100%);transition:transform .3s;display:flex;flex-direction:column;padding:22px}
+aside.open{transform:none}
+aside h2{font:700 1.5rem var(--display);display:flex;justify-content:space-between;align-items:center}
+.x{background:none;border:0;font-size:1.6rem;cursor:pointer;color:var(--muted)}
+.ship{margin:16px 0;font-size:.9rem;color:var(--muted)}
+.bar{height:6px;background:var(--line);border-radius:6px;margin-top:6px;overflow:hidden}
+.bar b{display:block;height:100%;width:0;background:var(--volt);transition:width .3s}
+.items{flex:1;overflow:auto;display:flex;flex-direction:column;gap:12px}
+.row{display:grid;grid-template-columns:48px 1fr auto;gap:12px;align-items:center;border-bottom:1px solid var(--line);padding-bottom:12px}
+.row .t{font-size:1.8rem;text-align:center}
+.qty{display:flex;align-items:center;gap:8px;margin-top:4px}
+.qty button{width:26px;height:26px;border-radius:8px;border:1px solid var(--line);background:var(--panel);cursor:pointer}
+.rm{background:none;border:0;color:var(--muted);cursor:pointer;font-size:.85rem;text-decoration:underline}
+.sum{border-top:1px solid var(--line);padding-top:14px;display:grid;gap:6px}
+.sum div{display:flex;justify-content:space-between}
+.sum .tot{font:700 1.3rem var(--display)}
+.coupon{display:flex;gap:8px;margin:12px 0}
+.coupon input{flex:1}
+.coupon button,.go{border:0;border-radius:10px;padding:10px 16px;cursor:pointer;font-weight:700}
+.coupon button{background:var(--cloud)}
+.go{background:var(--volt);color:#161100;width:100%;padding:14px;margin-top:6px}
+.go:disabled{opacity:.4;cursor:not-allowed}
+.msg{font-size:.85rem;color:var(--muted);min-height:1.2em}
+dialog{margin:auto;border:1px solid var(--line);border-radius:20px;background:#0b1120;color:var(--text);padding:28px;width:min(440px,92%)}
+dialog::backdrop{background:rgba(0,0,0,.7)}
+dialog h2{font:700 1.6rem var(--display);margin-bottom:6px}
+dialog form{display:grid;gap:12px;margin-top:16px}
+dialog input{width:100%}
+.ok{text-align:center}
+.ok .big{font-size:3rem}
+.toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,120px);background:var(--panel);border:1px solid var(--volt);border-radius:12px;padding:12px 20px;z-index:60;transition:transform .3s}
+.toast.show{transform:translate(-50%,0)}
+
+.picker{position:fixed;right:18px;bottom:18px;z-index:35;font:500 .95rem var(--body,system-ui)}
+.pbtn{display:flex;align-items:center;gap:10px;background:var(--surface,var(--panel));color:var(--text);border:1px solid var(--line);border-radius:999px;padding:10px 18px;cursor:pointer;box-shadow:0 10px 30px -10px #000;transition:border-color .2s}
+.pbtn:hover{border-color:var(--violet,var(--volt))}
+.pbtn .dot{width:16px;height:16px;border-radius:50%;background:hsl(var(--h,255) 100% 68%);box-shadow:0 0 14px hsl(var(--h,255) 100% 68%)}
+.ppanel{position:absolute;right:0;bottom:56px;width:260px;background:var(--surface,var(--panel));border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:0 20px 50px -15px #000}
+.ppanel[hidden]{display:none}
+.ppanel p{margin-bottom:12px;color:var(--muted)}
+.sw{display:flex;gap:10px;flex-wrap:wrap}
+.sw button{width:30px;height:30px;border-radius:50%;border:2px solid transparent;cursor:pointer;transition:transform .15s}
+.sw button:hover{transform:scale(1.15)}
+.sw button[aria-pressed=true]{border-color:var(--text)}
+.custom{display:flex;align-items:center;justify-content:space-between;margin-top:14px;color:var(--muted)}
+.custom input{width:44px;height:30px;border:0;background:none;cursor:pointer}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<canvas id="bolt" aria-hidden="true"></canvas>
+<div class="demo">Loja fictícia criada como projeto de demonstração. Nenhuma compra é real, mas serve como modelo para a sua loja. <a href="../">Voltar ao portfólio</a></div>
+
+<header>
+  <div class="wrap">
+    <div class="brand">STORM<i>⚡</i>SHOP</div>
+    <button class="cartbtn" id="openCart" aria-label="Abrir carrinho">Carrinho <span class="count" id="count">0</span></button>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="hero">
+    <h1>Energia para o seu setup.</h1>
+    <p>Áudio, periféricos e acessórios com entrega rápida. Frete grátis acima de R$ 299 e 10% off com o cupom STORM10.</p>
+  </section>
+
+  <div class="tools">
+    <div class="chips" id="chips" role="group" aria-label="Categorias"></div>
+    <input class="field" id="q" type="search" placeholder="Buscar produto" aria-label="Buscar produto">
+    <select class="field" id="sort" aria-label="Ordenar">
+      <option value="0">Destaques</option>
+      <option value="1">Menor preço</option>
+      <option value="2">Maior preço</option>
+    </select>
+  </div>
+
+  <div class="grid" id="grid"></div>
+</main>
+
+<div class="shade" id="shade"></div>
+<aside id="cart" aria-label="Carrinho" aria-hidden="true">
+  <h2>Seu carrinho <button class="x" id="closeCart" aria-label="Fechar carrinho">×</button></h2>
+  <div class="ship"><span id="shipTxt"></span><div class="bar"><b id="shipBar"></b></div></div>
+  <div class="items" id="items"></div>
+  <div class="coupon"><input class="field" id="cup" placeholder="Cupom de desconto" aria-label="Cupom"><button id="applyCup">Aplicar</button></div>
+  <div class="msg" id="cupMsg"></div>
+  <div class="sum">
+    <div><span>Subtotal</span><span id="sub"></span></div>
+    <div><span>Desconto</span><span id="disc"></span></div>
+    <div><span>Frete</span><span id="frete"></span></div>
+    <div class="tot"><span>Total</span><span id="total"></span></div>
+  </div>
+  <button class="go" id="checkout" disabled>Finalizar compra</button>
+</aside>
+
+<dialog id="dlg"></dialog>
+<div class="toast" id="toast" role="status"></div>
+<div class="picker">
+  <button class="pbtn" id="pbtn" aria-expanded="false" aria-controls="ppanel"><span class="dot"></span>Cor do site</button>
+  <div class="ppanel" id="ppanel" hidden>
+    <p>Escolha a cor do site</p>
+    <div class="sw" id="sw"></div>
+    <label class="custom">Cor personalizada <input type="color" id="pc" value="#ffd23f"></label>
+  </div>
+</div>
+
+
+<script>
+const P=[
+ {id:1,n:'Headset Tempest 7.1',c:'Áudio',p:349.9,e:'🎧',h:'#5b7cff'},
+ {id:2,n:'Teclado Thunder 75%',c:'Periféricos',p:429.9,e:'⌨️',h:'#ffd23f'},
+ {id:3,n:'Mouse Volt Air',c:'Periféricos',p:219.9,e:'🖱️',h:'#ff5b8a'},
+ {id:4,n:'Monitor Cyclone 27"',c:'Setup',p:1599,e:'🖥️',h:'#35d6a7'},
+ {id:5,n:'Controle Nimbus',c:'Periféricos',p:189.9,e:'🎮',h:'#a76bff'},
+ {id:6,n:'Power Bank Static 20K',c:'Setup',p:129.9,e:'🔋',h:'#ff9f3d'},
+ {id:7,n:'Microfone Gale USB',c:'Áudio',p:279.9,e:'🎙️',h:'#4fc8ff'},
+ {id:8,n:'Fita LED Aurora 5m',c:'Setup',p:89.9,e:'💡',h:'#ffd23f'}
+];
+const $=s=>document.querySelector(s), brl=v=>v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+let cat='Todos', cart={}, coupon=0;
+try{cart=JSON.parse(localStorage.getItem('storm-cart')||'{}')}catch(e){}
+const save=()=>{try{localStorage.setItem('storm-cart',JSON.stringify(cart))}catch(e){}};
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+let hue=46;
+
+/* relâmpago */
+const cv=$('#bolt'),cx=cv.getContext('2d');
+function bolt(){
+  if(reduce) return;
+  cv.width=innerWidth; cv.height=innerHeight;
+  let x=Math.random()*cv.width*.8+cv.width*.1,y=0;
+  cx.clearRect(0,0,cv.width,cv.height);
+  cx.strokeStyle='hsl('+hue+' 100% 88%)';cx.lineWidth=2.5;cx.shadowColor='hsl('+hue+' 100% 62%)';cx.shadowBlur=24;
+  cx.beginPath();cx.moveTo(x,y);
+  while(y<cv.height*.7){y+=18+Math.random()*30;x+=(Math.random()-.5)*60;cx.lineTo(x,y)}
+  cx.stroke();
+  cv.classList.add('on');setTimeout(()=>cv.classList.remove('on'),120);
+}
+setTimeout(bolt,900);
+setInterval(()=>{if(!document.hidden)bolt()},12000);
+
+/* vitrine */
+function chips(){
+  const cats=['Todos',...new Set(P.map(p=>p.c))];
+  $('#chips').innerHTML=cats.map(c=>`<button class="chip" aria-pressed="${c===cat}" data-c="${c}">${c}</button>`).join('');
+}
+function grid(){
+  const q=$('#q').value.trim().toLowerCase(),s=$('#sort').value;
+  let l=P.filter(p=>(cat==='Todos'||p.c===cat)&&p.n.toLowerCase().includes(q));
+  if(s==='1')l.sort((a,b)=>a.p-b.p);if(s==='2')l.sort((a,b)=>b.p-a.p);
+  $('#grid').innerHTML=l.length?l.map(p=>`<article class="prod"><div class="art" style="--c:${p.h}55">${p.e}</div><small>${p.c}</small><h3>${p.n}</h3><div class="price">${brl(p.p)}</div><button class="add" data-id="${p.id}">Adicionar ao carrinho</button></article>`).join(''):'<p class="empty">Nenhum produto encontrado. Tente outro termo ou categoria.</p>';
+}
+$('#chips').onclick=e=>{const c=e.target.dataset.c;if(c){cat=c;chips();grid()}};
+$('#q').oninput=grid;$('#sort').onchange=grid;
+$('#grid').onclick=e=>{const id=e.target.dataset.id;if(id){cart[id]=(cart[id]||0)+1;save();render();bolt();toast('Adicionado ao carrinho')}};
+$('#grid').addEventListener('pointermove',e=>{
+  if(reduce)return;const c=e.target.closest('.prod');if(!c)return;
+  const r=c.getBoundingClientRect(),x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5;
+  c.style.transform=`rotateY(${x*10}deg) rotateX(${-y*10}deg)`;
+});
+$('#grid').addEventListener('pointerout',e=>{const c=e.target.closest('.prod');if(c)c.style.transform=''});
+
+/* carrinho */
+function render(){
+  const ids=Object.keys(cart);
+  const sub=ids.reduce((a,i)=>a+P.find(p=>p.id==i).p*cart[i],0);
+  const disc=sub*coupon,frete=sub===0||sub>=299?0:24.9,tot=sub-disc+frete;
+  $('#count').textContent=ids.reduce((a,i)=>a+cart[i],0);
+  $('#items').innerHTML=ids.length?ids.map(i=>{const p=P.find(x=>x.id==i);return `<div class="row"><div class="t">${p.e}</div><div><b>${p.n}</b><div class="qty"><button data-m="${i}" aria-label="Diminuir">−</button><span>${cart[i]}</span><button data-a="${i}" aria-label="Aumentar">+</button></div></div><div><div>${brl(p.p*cart[i])}</div><button class="rm" data-r="${i}">Remover</button></div></div>`}).join(''):'<p class="msg">Seu carrinho está vazio. Escolha um produto na vitrine.</p>';
+  $('#sub').textContent=brl(sub);$('#disc').textContent=disc?'− '+brl(disc):'—';
+  $('#frete').textContent=sub===0?'—':frete?brl(frete):'Grátis';$('#total').textContent=brl(tot);
+  $('#shipBar').style.width=Math.min(sub/299*100,100)+'%';
+  $('#shipTxt').textContent=sub>=299?'Você ganhou frete grátis.':`Faltam ${brl(299-sub)} para o frete grátis.`;
+  $('#checkout').disabled=!ids.length;
+}
+$('#items').onclick=e=>{const d=e.target.dataset;
+  if(d.a)cart[d.a]++;if(d.m&&--cart[d.m]<=0)delete cart[d.m];if(d.r)delete cart[d.r];
+  save();render()};
+$('#applyCup').onclick=()=>{
+  const v=$('#cup').value.trim().toUpperCase();
+  coupon=v==='STORM10'?.1:0;
+  $('#cupMsg').textContent=coupon?'Cupom aplicado: 10% de desconto.':'Cupom inválido. Tente STORM10.';render()};
+const cartEl=$('#cart');
+function openCart(o){cartEl.classList.toggle('open',o);$('#shade').classList.toggle('open',o);cartEl.setAttribute('aria-hidden',!o)}
+$('#openCart').onclick=()=>openCart(true);$('#closeCart').onclick=$('#shade').onclick=()=>openCart(false);
+addEventListener('keydown',e=>{if(e.key==='Escape')openCart(false)});
+
+/* checkout fictício */
+const dlg=$('#dlg');
+$('#checkout').onclick=()=>{
+  dlg.innerHTML=`<h2>Finalizar compra</h2><p class="msg">Ambiente de demonstração. Não use dados reais.</p>
+  <form id="f"><input class="field" name="n" placeholder="Nome completo" required><input class="field" type="email" name="e" placeholder="E-mail" required><input class="field" name="c" placeholder="CEP" required pattern="\\d{5}-?\\d{3}" title="Digite um CEP com 8 números"><button class="go">Confirmar pedido</button></form>`;
+  dlg.showModal();
+  $('#f').onsubmit=ev=>{
+    ev.preventDefault();
+    const nome=new FormData(ev.target).get('n').split(' ')[0];
+    const num='ST-'+Math.floor(10000+Math.random()*89999);
+    cart={};coupon=0;save();render();openCart(false);bolt();
+    dlg.innerHTML='<div class="ok"><div class="big">⚡</div><h2>Pedido confirmado</h2><p id="okp" class="msg"></p><button class="go" id="close">Voltar à loja</button></div>';
+    $('#okp').textContent=`Obrigado, ${nome}! Seu pedido ${num} é fictício, então nada será enviado.`;
+    $('#close').onclick=()=>dlg.close();
+  };
+};
+let tt;function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>e.classList.remove('show'),1600)}
+
+chips();grid();render();
+
+/* ---------- Seletor de cor ---------- */
+function initPicker(presets,def,key,apply){
+  const root=document.documentElement,sw=document.getElementById('sw'),panel=document.getElementById('ppanel'),btn=document.getElementById('pbtn');
+  const hexHue=hx=>{const r=parseInt(hx.slice(1,3),16)/255,g=parseInt(hx.slice(3,5),16)/255,b=parseInt(hx.slice(5,7),16)/255,m=Math.max(r,g,b),d=m-Math.min(r,g,b);if(!d)return 0;const k=m===r?((g-b)/d)%6:m===g?(b-r)/d+2:(r-g)/d+4;return Math.round((k*60+360)%360)};
+  sw.innerHTML=presets.map(([v,n])=>`<button data-h="${v}" aria-label="${n}" title="${n}" style="background:hsl(${v} 100% 68%)"></button>`).join('');
+  const set=v=>{root.style.setProperty('--h',v);apply(v);
+    sw.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.h===v));
+    try{localStorage.setItem(key,v)}catch(e){}};
+  let h=def;try{const s=localStorage.getItem(key);if(s!==null&&!isNaN(+s))h=+s}catch(e){}
+  set(h);
+  sw.onclick=e=>{if(e.target.dataset.h)set(+e.target.dataset.h)};
+  document.getElementById('pc').oninput=e=>set(hexHue(e.target.value));
+  const toggle=o=>{panel.hidden=!o;btn.setAttribute('aria-expanded',o)};
+  btn.onclick=()=>toggle(panel.hidden);
+  addEventListener('keydown',e=>{if(e.key==='Escape')toggle(false)});
+  document.addEventListener('pointerdown',e=>{if(!e.target.closest('.picker'))toggle(false)});
+}
+const PRESETS=[[255,'Violeta'],[190,'Ciano'],[145,'Verde'],[330,'Rosa'],[25,'Laranja'],[0,'Vermelho'],[46,'Amarelo']];
+
+initPicker(PRESETS,46,'storm-hue',v=>{
+  hue=v;
+  const r=document.documentElement.style;
+  r.setProperty('--volt',`hsl(${v} 100% 62%)`);
+  r.setProperty('--cloud',`hsl(${(v+181)%360} 100% 68%)`);
+});
+</script>
+</body>
+</html>

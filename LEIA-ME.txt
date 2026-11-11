@@ -1,0 +1,24 @@
+PORTFÓLIO JACKSON FB - DESENVOLVEDOR FULL STACK
+Instagram: @jacksonfb_ | WhatsApp: (54) 99915-886 (confira o número)
+
+CONTEÚDO
+- index.html          Portfólio em 3D dark (Three.js)
+- storm-shop/         Storm Shop, loja de demonstração
+
+NOVIDADES
+- Botão "Cor do site" (canto inferior direito): 7 cores prontas e uma
+  cor personalizada. A escolha fica salva no navegador.
+- Portfólio: forma 3D que "respira" e pulsa ao clicar, brilho que segue
+  o mouse, luz nos cartões, botões magnéticos, texto que se digita e
+  barra de progresso do scroll.
+
+AVISO
+A Storm Shop é FICTÍCIA: produtos, preços, cupom (STORM10) e pedidos
+são inventados e nenhuma compra é real. Ela pode ser usada como MODELO
+para criar uma loja de verdade.
+
+COMO PUBLICAR NA VERCEL
+1. Extraia esta pasta.
+2. Abra um terminal dentro dela e rode: vercel
+   (ou suba para o GitHub e importe em vercel.com/new)
+3. A loja fica em: seu-site.vercel.app/storm-shop/
