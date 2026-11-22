@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Política de privacidade | Jackson FB</title>
+<meta name="theme-color" content="#07060d">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="solid"><div class="wrap"><a class="logo" href="index.html"><i>JF</i>Jackson FB</a><a class="btn" href="index.html">← Voltar ao site</a></div></header>
+<main class="wrap">
+<article class="article">
+  <span class="eyebrow">Privacidade</span>
+  <h1>Política de privacidade</h1>
+  <div class="meta">Última atualização: <span id="dt"></span></div>
+  <div class="body">
+    <p>Esta página explica quais dados este site coleta, por que e como você pode controlá-los, de acordo com a Lei Geral de Proteção de Dados (LGPD, Lei 13.709/2018).</p>
+    <h2>Quem é o responsável</h2>
+    <p>Jackson FB, desenvolvedor, responsável por este site. Contato: WhatsApp <span data-cfg="whatsappExibicao"></span><span id="em"></span>.</p>
+    <h2>Dados que você nos envia</h2>
+    <ul>
+      <li><strong>Pedidos e encomendas:</strong> nome, WhatsApp, e-mail, empresa e a descrição do projeto. Usados para preparar a proposta, executar o serviço e falar com você.</li>
+      <li><strong>Conta na Área do cliente:</strong> e-mail, senha (guardada de forma criptografada pelo provedor de login) e, se você informar, nome e WhatsApp. Usados para você acompanhar seus pedidos.</li>
+      <li><strong>Contato deixado no quiz ou no popup de cupom:</strong> nome e WhatsApp ou e-mail. Usados para enviar a análise ou o cupom prometidos e, eventualmente, ofertas relacionadas.</li>
+    </ul>
+    <h2>Dados de navegação</h2>
+    <p>Somente se você clicar em <strong>Aceitar</strong> no aviso do site, registramos de forma anônima quais páginas e seções foram vistas, por quanto tempo e de qual site você veio. Usamos um identificador aleatório guardado no seu navegador; não usamos esse dado para identificar você. Se você recusar, nada disso é registrado.</p>
+    <p>Seu carrinho e suas preferências (como a cor do site) ficam guardados apenas no seu próprio navegador.</p>
+    <h2>Pagamentos</h2>
+    <p>Os pagamentos são processados pelo Mercado Pago. Os dados do seu cartão ou da sua conta são digitados diretamente no ambiente do Mercado Pago e não passam por este site.</p>
+    <h2>Com quem os dados são compartilhados</h2>
+    <p>Usamos fornecedores para operar o site: Cloudflare (hospedagem), Supabase (banco de dados e login), Mercado Pago (pagamentos) e WhatsApp (atendimento). Não vendemos seus dados.</p>
+    <h2>Por quanto tempo guardamos</h2>
+    <p>Dados de pedidos são mantidos pelo tempo necessário para prestar o serviço e cumprir obrigações legais e fiscais. Contatos de quiz e cupom podem ser apagados a qualquer momento, a seu pedido.</p>
+    <h2>Seus direitos</h2>
+    <p>Você pode pedir acesso, correção ou exclusão dos seus dados, ou retirar seu consentimento, falando pelo WhatsApp. Para mudar a escolha sobre dados de navegação, <a href="#" id="reset">clique aqui</a> e o aviso aparecerá novamente.</p>
+  </div>
+</article>
+</main>
+<script src="assets/catalogo.js"></script>
+<script src="assets/db.js"></script>
+<script>
+  document.querySelectorAll('[data-cfg]').forEach((el) => { el.textContent = DB.CONFIG[el.dataset.cfg] || ''; });
+  if (DB.CONFIG.email) document.getElementById('em').textContent = ' · e-mail ' + DB.CONFIG.email;
+  document.getElementById('dt').textContent = new Date(2026, 10, 22).toLocaleDateString('pt-BR');
+  document.getElementById('reset').onclick = (e) => { e.preventDefault(); try { localStorage.removeItem('jf-consent'); localStorage.removeItem('jf-sid'); } catch {} location.href = 'index.html'; };
+</script>
+</body>
+</html>

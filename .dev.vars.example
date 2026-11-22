@@ -1,0 +1,6 @@
+# Copie este arquivo para ".dev.vars" para testar no seu computador com "npm run dev".
+# O .dev.vars NUNCA vai para o GitHub (está no .gitignore).
+# Em produção, cadastre estes valores no painel da Cloudflare como Secrets.
+MP_ACCESS_TOKEN=APP_USR-coloque-aqui-o-token-de-TESTE
+SUPABASE_URL=https://xxxx.supabase.co
+SUPABASE_SECRET_KEY=sb_secret_xxxx

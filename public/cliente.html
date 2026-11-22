@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Área do cliente | Jackson FB</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#07060d">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2224%22 fill=%22%238b6bff%22/><text x=%2250%22 y=%2266%22 font-size=%2246%22 font-family=%22Arial%22 font-weight=%22900%22 text-anchor=%22middle%22 fill=%22%230b0816%22>JF</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="grain" aria-hidden="true"></div>
+<canvas id="scene" aria-hidden="true"></canvas>
+<header class="solid">
+  <div class="wrap">
+    <a class="logo" href="index.html"><i>JF</i>Jackson FB</a>
+    <div class="hright" id="hdrAct"><a class="btn" href="index.html">← Voltar ao site</a></div>
+  </div>
+</header>
+<main class="wrap page" id="app"><p style="color:var(--muted)">Carregando…</p></main>
+<div class="toast" id="toast" role="status"></div>
+<script src="assets/catalogo.js"></script>
+<script src="assets/db.js"></script>
+<script src="assets/ajuda.js"></script>
+<script src="assets/vendor/three.min.js" defer></script>
+<script src="assets/scene3d.js" defer></script>
+<script>addEventListener('DOMContentLoaded', () => { const s = window.Scene3D && Scene3D.init(document.getElementById('scene'), { start: 'cliente', calm: matchMedia('(prefers-reduced-motion: reduce)').matches }); if (s) s.colors(+DB.ls.get('portfolio-hue', 255) || 255); });</script>
+<script src="assets/cliente.js"></script>
+</body>
+</html>

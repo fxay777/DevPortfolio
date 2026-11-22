@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Blog | Jackson FB · Dicas de sites, lojas e presença digital</title>
+<meta name="description" content="Dicas práticas sobre sites, lojas virtuais, conversão e presença digital para pequenos negócios.">
+<meta name="theme-color" content="#07060d">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2224%22 fill=%22%238b6bff%22/><text x=%2250%22 y=%2266%22 font-size=%2246%22 font-family=%22Arial%22 font-weight=%22900%22 text-anchor=%22middle%22 fill=%22%230b0816%22>JF</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="grain" aria-hidden="true"></div>
+<div class="prog" id="prog" aria-hidden="true"></div>
+<header class="solid">
+  <div class="wrap">
+    <a class="logo" href="index.html"><i>JF</i>Jackson FB</a>
+    <div class="hright"><a class="btn" href="blog.html">Blog</a><a class="btn primary" href="index.html#loja">Ver pacotes</a></div>
+  </div>
+</header>
+
+<main class="wrap" id="conteudo">
+  <div class="page"><p style="color:var(--muted)">Carregando…</p></div>
+</main>
+
+<footer><div class="wrap"><span>© <span id="ano"></span> Jackson FB</span><span class="links"><a href="index.html">Início</a><a href="index.html#encomenda">Encomendar</a><a href="cliente.html">Área do cliente</a><a href="privacidade.html">Privacidade</a></span></div></footer>
+
+<script src="assets/catalogo.js"></script>
+<script src="assets/db.js"></script>
+<script src="assets/posts.js"></script>
+<script>
+(async () => {
+  const { esc, md, data, waLink, track } = DB;
+  document.getElementById('ano').textContent = new Date().getFullYear();
+  const root = document.getElementById('conteudo');
+  const slug = new URLSearchParams(location.search).get('p');
+  const lista = await DB.posts();
+  const card = (p) => `<a class="post in" href="blog.html?p=${encodeURIComponent(p.slug)}"><span class="cat">${esc(p.categoria || 'Dica')}</span><h3>${esc(p.titulo)}</h3><p>${esc(p.resumo || '')}</p><span class="dt">${data(p.criado_em)}</span><span class="rd">Ler artigo →</span></a>`;
+
+  if (!slug) {
+    root.innerHTML = `<div class="page"><span class="eyebrow">Blog</span><h2>Dicas para vender mais online.</h2>
+      <p class="lead">Conteúdo direto ao ponto sobre sites, lojas e presença digital.</p>
+      <div class="posts">${lista.map(card).join('') || '<p class="note-box">Nenhum post publicado ainda.</p>'}</div></div>`;
+    if (DB.consent() === 'sim') track('blog_lista');
+    return;
+  }
+  const p = lista.find((x) => x.slug === slug);
+  if (!p) { root.innerHTML = '<div class="page"><h2>Post não encontrado</h2><p class="lead">Ele pode ter sido removido.</p><a class="btn primary" href="blog.html">Ver todos os posts</a></div>'; return; }
+  document.title = `${p.titulo} | Blog Jackson FB`;
+  const meta = document.querySelector('meta[name=description]'); if (meta && p.resumo) meta.content = p.resumo;
+  const palavras = (p.conteudo || '').split(/\s+/).length, min = Math.max(1, Math.round(palavras / 200));
+  const outros = lista.filter((x) => x.slug !== slug).slice(0, 2);
+  root.innerHTML = `<article class="article">
+      <a class="link" href="blog.html">← Todos os posts</a>
+      <div style="margin-top:22px"><span class="eyebrow">${esc(p.categoria || 'Dica')}</span></div>
+      <h1>${esc(p.titulo)}</h1>
+      <div class="meta">${data(p.criado_em)} · ${min} min de leitura · por Jackson FB</div>
+      <div class="body">${md(p.conteudo)}</div>
+      <div class="share">Compartilhar: <a class="mini" target="_blank" rel="noopener" href="${waLink(p.titulo + ' ' + location.href, '')}">WhatsApp</a><button class="mini" id="cp">Copiar link</button></div>
+      <div class="cta-box"><h3>Quer um site que trabalha por você?</h3><p style="color:var(--muted);margin-bottom:18px">Veja os pacotes com preço na hora ou encomende algo sob medida.</p>
+        <div class="cta"><a class="btn primary" href="index.html#loja">Ver pacotes <span class="arr">→</span></a><a class="btn" href="index.html#quiz">Fazer o quiz</a></div></div>
+      ${outros.length ? `<h3 style="font:700 1.4rem var(--display);margin:60px 0 20px">Leia também</h3><div class="posts">${outros.map(card).join('')}</div>` : ''}
+    </article>`;
+  document.getElementById('cp').onclick = (e) => { navigator.clipboard && navigator.clipboard.writeText(location.href); e.target.textContent = 'Link copiado!'; };
+  if (DB.consent() === 'sim') {
+    track('post', { slug });
+    [25, 50, 90].forEach((pct) => { let feito = false; addEventListener('scroll', () => { const m = document.documentElement.scrollHeight - innerHeight; if (!feito && m > 0 && scrollY / m * 100 >= pct) { feito = true; track('post_leitura', { slug, pct }); } }, { passive: true }); });
+  }
+  const prog = document.getElementById('prog');
+  addEventListener('scroll', () => { const m = document.documentElement.scrollHeight - innerHeight; prog.style.transform = `scaleX(${m > 0 ? scrollY / m : 0})`; }, { passive: true });
+})();
+</script>
+</body>
+</html>

@@ -1,24 +1,187 @@
 PORTFÓLIO JACKSON FB - DESENVOLVEDOR FULL STACK
-Instagram: @jacksonfb_ | WhatsApp: (54) 99915-886 (confira o número)
+Instagram: @jacksonfb_ | WhatsApp: (54) 99915-886 (confira o número!)
 
-CONTEÚDO
-- index.html          Portfólio em 3D dark (Three.js)
-- storm-shop/         Storm Shop, loja de demonstração
+======================================================================
+ESTRUTURA
+======================================================================
+HOSPEDAGEM: Cloudflare Workers (site + servidor de pagamento juntos)
 
-NOVIDADES
-- Botão "Cor do site" (canto inferior direito): 7 cores prontas e uma
-  cor personalizada. A escolha fica salva no navegador.
-- Portfólio: forma 3D que "respira" e pulsa ao clicar, brilho que segue
-  o mouse, luz nos cartões, botões magnéticos, texto que se digita e
-  barra de progresso do scroll.
+public/                    >>> TUDO o que aparece no site fica aqui
+  index.html               Portfólio (pacotes, quiz, encomenda, blog, chat)
+  blog.html                Blog (blog.html?p=endereco)
+  cliente.html             Área do cliente
+  admin.html               SEU painel
+  ajuda.html               Central de ajuda
+  privacidade.html         Política de privacidade (LGPD) - revise o texto
+  storm-shop/              Loja de demonstração
+  assets/catalogo.js       >>> EDITE AQUI: preços, cupons, WhatsApp, chaves públicas
+  assets/ajuda.js          >>> Perguntas da Central de ajuda (o chat usa também)
+  assets/posts.js          Posts iniciais do blog
+  assets/scene3d.js        Cena 3D
+  assets/jogo.js           Modo Explorador (missões, XP, conquistas)
+  assets/criador.js        "Monte seu site em 30 segundos"
+  assets/app.js            Animações, carrinho, checkout, encomenda
+  assets/engage.js         Quiz, chat, popup de saída, métricas
+  assets/db.js             Conexão com o banco (Supabase)
+  assets/cliente.js / admin.js   Área do cliente / Painel
+  assets/vendor/           Three.js (biblioteca 3D)
+worker/index.js            Servidor: pagamento no Mercado Pago (/api/checkout)
+                           e confirmação de pagamento (/api/webhook-mp)
+wrangler.jsonc             Configuração da Cloudflare (sem chaves!)
+package.json               Comandos: npm run dev / npm run deploy
+.dev.vars.example          Modelo de chaves para testar no seu computador
+supabase/schema.sql        Banco de dados (rodar no Supabase)
 
-AVISO
-A Storm Shop é FICTÍCIA: produtos, preços, cupom (STORM10) e pedidos
-são inventados e nenhuma compra é real. Ela pode ser usada como MODELO
-para criar uma loja de verdade.
+======================================================================
+O QUE O SITE FAZ PARA SEGURAR O VISITANTE
+======================================================================
+- Popup de saída: quando a pessoa vai fechar a página, oferece o cupom
+  BEMVINDO10 (10%) em troca do contato. Se ela tem itens no carrinho,
+  lembra do pedido e aplica o cupom. Aparece no máximo 1x a cada 5 dias.
+- Lembrete de carrinho: quem volta ao site vê "seu pedido está salvo".
+- Chat de atendimento: responde preço, prazo, pagamento e pedido na hora,
+  e manda qualquer outra pergunta pronta para o seu WhatsApp.
+- Quiz "Qual site é ideal para você?": recomenda o pacote e captura lead.
+- Blog: posts com dicas, e você publica novos pelo painel.
+- Área do cliente: o cliente cria conta, acompanha o status do projeto
+  (Pedido > Pago > Briefing > Criação > Revisão > Entregue) e vê as
+  atualizações que você publica.
+- Suporte: o cliente abre CHAMADOS na Área do cliente (dúvida, alteração,
+  problema, financeiro). Você responde pelo Painel > Suporte e a conversa
+  aparece ao vivo para os dois. Enquanto o cliente digita o assunto, o site
+  sugere artigos da Central de ajuda que podem resolver na hora.
+- Arquivos: o cliente envia logo, fotos e textos (até 25 MB cada) na aba
+  Arquivos. Só ele e você têm acesso. Você baixa em Painel > Clientes.
+- Avaliações: quando um pedido vira "Entregue", o cliente pode dar nota e
+  comentar. Você aprova em Painel > Avaliações e só então ela aparece no
+  site (seção "Quem já fez, conta.", que fica escondida até ter avaliação).
+- Modo Explorador (gamificação): barra de XP no rodapé com 7 missões
+  (acertar 5 formas 3D, ver os projetos, montar a prévia do site, fazer o
+  quiz, trocar a cor, abrir uma dúvida...). Cada conquista solta confete.
+  Completou tudo? Ganha o cupom EXPLORADOR15 (15%), aplicado no carrinho.
+  Para mudar o prêmio: cupomExplorador e cupons no catalogo.js.
+- "Monte seu site em 30 segundos": o visitante digita o nome do negócio,
+  escolhe segmento, estilo, cor e recursos e vê a prévia ao vivo. O botão
+  "Quero um site assim" preenche a encomenda automaticamente.
+- Quando a pessoa troca de aba, o título chama de volta.
+- Painel: visitantes por dia, funil de vendas, seções mais vistas, de
+  onde vieram, resultado do quiz, popup, leads, pedidos e clientes.
 
-COMO PUBLICAR NA VERCEL
-1. Extraia esta pasta.
-2. Abra um terminal dentro dela e rode: vercel
-   (ou suba para o GitHub e importe em vercel.com/new)
-3. A loja fica em: seu-site.vercel.app/storm-shop/
+Sem o Supabase configurado o site continua funcionando: o chat, o quiz,
+o popup e o blog (com os posts iniciais) funcionam; os contatos e pedidos
+vão só pelo WhatsApp e a Área do cliente mostra "em breve".
+
+======================================================================
+PASSO 1 - CONFIRA O CATÁLOGO (public/assets/catalogo.js)
+======================================================================
+- WhatsApp: 55 + DDD + 9 dígitos. Hoje está "555499915886", que parece
+  ter um dígito a menos.
+- Preços, prazos e cupons (cupons: { BEMVINDO10: 0.1 } = 10%).
+  Para desligar o cupom do popup: cupomSaida: ''
+
+======================================================================
+PASSO 2 - BANCO DE DADOS (Supabase, grátis) ~10 min
+======================================================================
+1. Crie uma conta em https://supabase.com e um projeto novo
+   (região: South America - São Paulo).
+2. Menu "SQL Editor" > "New query" > cole TODO o arquivo
+   supabase/schema.sql > "Run".
+   JÁ RODOU ANTES? Rode o arquivo inteiro de novo: ele só adiciona o que
+   falta (chamados, avaliações, pasta de arquivos) e não apaga nada.
+3. Menu "Project Settings" > "API Keys":
+   - copie a "Project URL"          -> supabaseUrl  no catalogo.js
+   - copie a "Publishable key"      -> supabaseKey  no catalogo.js
+     (sb_publishable_... é pública, pode ficar no site)
+   - copie a "Secret key" (sb_secret_...) -> NÃO coloque no site!
+     Ela vai na Cloudflare como Secret (passo 4).
+4. Menu "Authentication" > "URL Configuration":
+   Site URL = o endereço do seu site (ex.: https://jacksonfb-portfolio.SEU-USUARIO.workers.dev
+              ou o seu domínio)
+   Redirect URLs: adicione  https://SEU-ENDERECO/cliente  e  https://SEU-ENDERECO/cliente.html
+5. (Recomendado) "Authentication" > "Emails": personalize em português
+   o e-mail de confirmação e o de redefinição de senha.
+
+======================================================================
+PASSO 3 - VIRAR ADMINISTRADOR
+======================================================================
+1. Publique o site, abra seu-site/cliente.html e crie sua conta.
+2. Confirme o e-mail.
+3. No Supabase > SQL Editor rode (com o SEU e-mail):
+   insert into public.admins (user_id) select id from auth.users where email = 'SEU@EMAIL.com';
+4. Abra seu-site/admin.html. Na aba Blog clique em
+   "Importar os 3 posts iniciais" para poder editá-los.
+
+======================================================================
+PASSO 4 - PUBLICAR NA CLOUDFLARE
+======================================================================
+1. Suba esta pasta inteira para o seu repositório no GitHub.
+2. Cloudflare > Workers & Pages > Create application > escolha GitHub >
+   selecione o repositório DevPortfolio.
+   - Build command: deixe em branco
+   - Deploy command: npx wrangler deploy   (se ele perguntar)
+   Salve e publique. O site fica em  jacksonfb-portfolio.SEU-USUARIO.workers.dev
+3. A cada "push" no GitHub, a Cloudflare publica de novo sozinha.
+(Alternativa sem GitHub: no computador, rode  npm install  e depois
+ npx wrangler login  e  npm run deploy)
+
+Domínio próprio: Workers & Pages > seu Worker > Settings > Domains & Routes
+> Add > Custom domain.
+
+======================================================================
+PASSO 5 - ONDE COLOCAR A CHAVE DO MERCADO PAGO (e as do Supabase)
+======================================================================
+Cloudflare > Workers & Pages > clique no Worker "jacksonfb-portfolio" >
+Settings > Variables and Secrets > Add
+
+  Tipo SECRET (fica escondido, nem você vê de novo):
+    MP_ACCESS_TOKEN      Access Token do Mercado Pago (APP_USR-...)
+    SUPABASE_SECRET_KEY  Secret key do Supabase (sb_secret_...)
+  Tipo TEXT (normal):
+    SUPABASE_URL         a Project URL do Supabase
+    SITE_URL             (opcional) https://seudominio.com.br
+
+Clique em DEPLOY no final para salvar.
+
+Pela linha de comando também dá:  npx wrangler secret put MP_ACCESS_TOKEN
+(ele pede para você colar a chave).
+
+NUNCA coloque essas chaves no wrangler.jsonc, no catalogo.js ou em
+qualquer arquivo que vai para o GitHub.
+
+Testar: abra o site, coloque um pacote no carrinho > Finalizar pedido >
+Pagar com Pix ou cartão. Abriu o Mercado Pago? Funcionou.
+Se aparecer "Pagamento online indisponível": confira o nome
+MP_ACCESS_TOKEN e se clicou em Deploy. Os erros aparecem em
+Workers & Pages > seu Worker > Logs (procure "Mercado Pago:").
+
+Com o Supabase configurado, cada pagamento aprovado marca o pedido como
+"Pago" sozinho e avisa o cliente na Área do cliente.
+
+TESTAR NO COMPUTADOR (opcional): copie .dev.vars.example para .dev.vars,
+coloque o token de TESTE e rode  npm install  e  npm run dev
+(abre em http://localhost:8787).
+
+======================================================================
+MERCADO PAGO (resumo)
+======================================================================
+mercadopago.com.br/developers > Criar aplicação > Checkouts >
+Checkout Pro (API de Preferências) > copie o Access Token.
+Teste primeiro com as credenciais de teste.
+
+======================================================================
+NO DIA A DIA
+======================================================================
+- Pedido novo: aparece no Painel > Pedidos (com número em destaque).
+- Mudou de fase? Abra o pedido, troque o status e salve: o cliente vê.
+- Mandou prévia? "Nova atualização para o cliente" com o link.
+- Pagamento por Pix fora do site? Ajuste "Pago (R$)" no pedido.
+- Leads: Painel > Leads > botão WhatsApp já com mensagem pronta.
+
+- Chamado novo: Painel > Suporte (número em destaque). Use as respostas
+  rápidas e o botão "Avisar no WhatsApp" para o cliente ver na hora.
+
+AVISOS
+- Revise as respostas da Central de ajuda (public/assets/ajuda.js), principalmente
+  a de cancelamento/reembolso, para refletir as SUAS regras.
+- A Storm Shop é FICTÍCIA (produtos, preços e cupom STORM10).
+- Revise privacidade.html com os seus dados antes de divulgar.
