@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Central de ajuda | Jackson FB</title>
+<meta name="description" content="Tire suas dúvidas sobre pagamento, prazos, envio de arquivos, alterações, domínio e a Área do cliente.">
+<meta name="theme-color" content="#07060d">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2224%22 fill=%22%238b6bff%22/><text x=%2250%22 y=%2266%22 font-size=%2246%22 font-family=%22Arial%22 font-weight=%22900%22 text-anchor=%22middle%22 fill=%22%230b0816%22>JF</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .help-hero{padding:150px 0 50px}
+  .help-hero h1{font:800 clamp(2.6rem,7vw,4.6rem)/1 var(--display);letter-spacing:-.03em;max-width:14ch}
+  .search{position:relative;max-width:640px;margin-top:30px}
+  .search input{width:100%;padding:20px 22px 20px 56px;font-size:1.1rem;border-radius:18px;background:color-mix(in srgb,var(--surface) 85%,transparent);backdrop-filter:blur(10px);border:1px solid var(--line-2)}
+  .search input:focus{outline:none;border-color:var(--violet);box-shadow:0 0 0 4px color-mix(in srgb,var(--violet) 20%,transparent)}
+  .search::before{content:"⌕";position:absolute;left:20px;top:50%;transform:translateY(-52%);font-size:1.6rem;color:var(--muted)}
+  .sugs{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+  .sugs button{border:1px solid var(--line-2);background:transparent;border-radius:999px;padding:6px 12px;font-size:.86rem;color:var(--muted);cursor:pointer}
+  .sugs button:hover{color:var(--text);border-color:var(--violet)}
+  .cats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin:10px 0 50px}
+  .cat{display:flex;flex-direction:column;gap:6px;padding:18px;border:1px solid var(--line);border-radius:18px;background:color-mix(in srgb,var(--surface) 85%,transparent);cursor:pointer;text-align:left;transition:transform .3s var(--ease),border-color .2s}
+  .cat:hover,.cat.on{transform:translateY(-4px);border-color:var(--violet)}
+  .cat i{font-style:normal;font-size:1.5rem}.cat b{font:700 1rem var(--display)}.cat small{color:var(--muted)}
+  .kb h2{font:700 1.4rem var(--display);margin:34px 0 14px;max-width:none}
+  .kb details{border:1px solid var(--line);border-radius:16px;background:color-mix(in srgb,var(--surface) 85%,transparent);margin-bottom:10px;scroll-margin-top:100px}
+  .kb details[open]{border-color:var(--line-2)}
+  .kb details.hl{border-color:var(--violet);box-shadow:0 0 0 3px color-mix(in srgb,var(--violet) 25%,transparent)}
+  .kb summary{list-style:none;cursor:pointer;padding:18px 22px;font:600 1.04rem var(--display);display:flex;justify-content:space-between;gap:16px}
+  .kb summary::-webkit-details-marker{display:none}
+  .kb summary::after{content:"+";color:var(--violet);font:400 1.5rem var(--body);line-height:1;transition:transform .3s}
+  .kb details[open] summary::after{transform:rotate(45deg)}
+  .kb .body{padding:0 22px 18px;font-size:1rem}
+  .kb .body p,.kb .body li{color:#d6d2ee}
+  .kb .util{display:flex;gap:10px;align-items:center;color:var(--muted);font-size:.85rem;margin-top:12px}
+  .kb .util button{border:1px solid var(--line-2);background:none;border-radius:999px;padding:4px 10px;cursor:pointer;font-size:.82rem}
+  .nores{padding:30px;border:1px dashed var(--line-2);border-radius:18px;color:var(--muted);text-align:center}
+  .still{margin:60px 0 100px;padding:40px;border:1px solid var(--violet);border-radius:26px;background:color-mix(in srgb,var(--violet) 8%,var(--surface));text-align:center}
+  .still h2{margin:0 auto 10px;max-width:none}
+  .still .cta{justify-content:center}
+</style>
+</head>
+<body>
+<div class="grain" aria-hidden="true"></div>
+<canvas id="scene" aria-hidden="true"></canvas>
+<header class="solid"><div class="wrap"><a class="logo" href="index.html"><i>JF</i>Jackson FB</a>
+  <div class="hright"><a class="btn" href="index.html">Site</a><a class="btn primary" href="cliente.html">Área do cliente</a></div></div></header>
+<main class="wrap">
+  <div class="help-hero">
+    <span class="eyebrow">Central de ajuda</span>
+    <h1>Como posso te ajudar?</h1>
+    <div class="search"><input id="q" type="search" placeholder="Ex.: como pagar, prazo, enviar logo…" aria-label="Buscar na ajuda" autocomplete="off"></div>
+    <div class="sugs" id="sugs"></div>
+  </div>
+  <div class="cats" id="cats"></div>
+  <div class="kb" id="kb"></div>
+  <div class="still">
+    <h2>Não encontrou o que precisava?</h2>
+    <p class="lead" style="margin:0 auto 26px">Abra um chamado e acompanhe a resposta pela Área do cliente, ou fale comigo direto no WhatsApp.</p>
+    <div class="cta"><a class="btn primary" href="cliente.html#suporte">Abrir um chamado <span class="arr">→</span></a><a class="btn wa" id="wa" target="_blank" rel="noopener">WhatsApp</a></div>
+  </div>
+</main>
+<footer><div class="wrap"><span>© <span id="ano"></span> Jackson FB</span><span class="links"><a href="index.html">Início</a><a href="blog.html">Blog</a><a href="cliente.html">Área do cliente</a><a href="privacidade.html">Privacidade</a></span></div></footer>
+<script src="assets/vendor/three.min.js" defer></script>
+<script src="assets/catalogo.js"></script>
+<script src="assets/db.js"></script>
+<script src="assets/ajuda.js"></script>
+<script src="assets/scene3d.js" defer></script>
+<script>
+(() => {
+  const { esc, md, waLink } = DB, K = window.AJUDA;
+  const $ = (s) => document.querySelector(s);
+  $('#ano').textContent = new Date().getFullYear();
+  $('#wa').href = waLink('Olá Jackson! Estava na Central de ajuda e preciso de ajuda com:');
+  let cat = '', q = '';
+  const norm = (s) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  function score(a, termos) {
+    const alvo = norm(a.q + ' ' + a.tags), corpo = norm(a.a);
+    return termos.reduce((s, t) => s + (alvo.includes(t) ? 3 : 0) + (corpo.includes(t) ? 1 : 0), 0);
+  }
+  $('#cats').innerHTML = K.categorias.map((c) => `<button class="cat" data-c="${c.id}"><i>${c.icone}</i><b>${esc(c.nome)}</b><small>${K.artigos.filter((a) => a.cat === c.id).length} artigos</small></button>`).join('');
+  $('#sugs').innerHTML = ['Formas de pagamento', 'Prazo', 'Enviar arquivos', 'Pedir alteração', 'Esqueci a senha'].map((s) => `<button>${s}</button>`).join('');
+  function art(a) {
+    return `<details id="${a.id}"><summary>${esc(a.q)}</summary><div class="body">${md(a.a)}
+      <div class="util">Isso ajudou? <button data-ok="${a.id}">👍 Sim</button><button data-no="${a.id}">👎 Não</button></div></div></details>`;
+  }
+  function render() {
+    const termos = norm(q).split(/\s+/).filter((t) => t.length > 2);
+    let lista = K.artigos.filter((a) => !cat || a.cat === cat);
+    if (termos.length) lista = lista.map((a) => [a, score(a, termos)]).filter((x) => x[1] > 0).sort((a, b) => b[1] - a[1]).map((x) => x[0]);
+    document.querySelectorAll('.cat').forEach((b) => b.classList.toggle('on', b.dataset.c === cat));
+    if (!lista.length) { $('#kb').innerHTML = `<div class="nores">Nenhum artigo encontrado para "<b>${esc(q)}</b>". Tente outras palavras ou <a class="link" href="cliente.html#suporte">abra um chamado</a>.</div>`; return; }
+    if (termos.length) { $('#kb').innerHTML = `<h2>${lista.length} resultado${lista.length > 1 ? 's' : ''}</h2>` + lista.map(art).join(''); const f = $('#kb details'); if (f) f.open = true; return; }
+    $('#kb').innerHTML = K.categorias.filter((c) => !cat || c.id === cat).map((c) => `<h2>${c.icone} ${esc(c.nome)}</h2>` + lista.filter((a) => a.cat === c.id).map(art).join('')).join('');
+  }
+  let tb;
+  $('#q').oninput = (e) => { q = e.target.value; render(); clearTimeout(tb); tb = setTimeout(() => q.length > 2 && DB.track('ajuda_busca', { q: q.slice(0, 60) }), 900); };
+  $('#cats').onclick = (e) => { const b = e.target.closest('[data-c]'); if (!b) return; cat = cat === b.dataset.c ? '' : b.dataset.c; render(); $('#kb').scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+  $('#sugs').onclick = (e) => { if (e.target.tagName === 'BUTTON') { q = e.target.textContent; $('#q').value = q; render(); } };
+  $('#kb').addEventListener('click', (e) => {
+    const ok = e.target.dataset.ok, no = e.target.dataset.no;
+    if (!ok && !no) return;
+    DB.track('ajuda_voto', { id: ok || no, util: !!ok });
+    e.target.parentElement.innerHTML = ok ? '✓ Obrigado pelo retorno!' : 'Poxa! <a class="link" href="cliente.html#suporte">Abra um chamado</a> que eu te ajudo pessoalmente.';
+  });
+  $('#kb').addEventListener('toggle', (e) => { if (e.target.open) DB.track('ajuda_artigo', { id: e.target.id }); }, true);
+  render();
+  const h = location.hash.slice(1);
+  if (h) { const d = document.getElementById(h); if (d) { d.open = true; d.classList.add('hl'); setTimeout(() => d.scrollIntoView({ block: 'center' }), 200); } }
+  addEventListener('DOMContentLoaded', () => {
+    const s = window.Scene3D && Scene3D.init(document.getElementById('scene'), { start: 'ajuda', calm: matchMedia('(prefers-reduced-motion: reduce)').matches });
+    const hue = DB.ls.get('portfolio-hue', 255); if (s) s.colors(+hue || 255);
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Painel | Jackson FB</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#07060d">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2224%22 fill=%22%238b6bff%22/><text x=%2250%22 y=%2266%22 font-size=%2246%22 font-family=%22Arial%22 font-weight=%22900%22 text-anchor=%22middle%22 fill=%22%230b0816%22>JF</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .adm{padding:96px 0 60px}
+  .adm-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 26px;border-bottom:1px solid var(--line);padding-bottom:12px}
+  .adm-tabs button{background:none;border:1px solid transparent;color:var(--muted);padding:9px 16px;border-radius:12px;cursor:pointer;font-weight:500}
+  .adm-tabs button.on{background:var(--surface-2);border-color:var(--line-2);color:var(--text)}
+  .adm-tabs .n{display:inline-grid;place-items:center;min-width:20px;height:20px;margin-left:6px;border-radius:999px;background:var(--violet);color:#0b0816;font-size:.72rem;font-weight:700;padding:0 6px}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:22px}
+  .kpi{padding:18px 20px;border:1px solid var(--line);border-radius:18px;background:var(--surface)}
+  .kpi small{color:var(--muted);font-size:.82rem}
+  .kpi b{display:block;font:800 1.9rem/1.1 var(--display);margin-top:4px}
+  .kpi em{font-style:normal;font-size:.8rem;color:var(--muted)}
+  .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}
+  .box{padding:20px;border:1px solid var(--line);border-radius:18px;background:var(--surface)}
+  .box h3{font:700 1.05rem var(--display);margin-bottom:14px}
+  .bars{display:flex;align-items:flex-end;gap:4px;height:150px;padding-top:10px}
+  .bars div{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:6px;height:100%;min-width:0}
+  .bars i{display:block;width:100%;max-width:26px;border-radius:6px 6px 2px 2px;background:var(--violet);min-height:2px;position:relative}
+  .bars i:hover::after{content:attr(data-v);position:absolute;bottom:100%;left:50%;transform:translate(-50%,-4px);background:var(--surface-2);border:1px solid var(--line-2);padding:2px 8px;border-radius:6px;font-size:.75rem;font-style:normal;white-space:nowrap}
+  .bars small{font-size:.64rem;color:var(--muted);white-space:nowrap}
+  .rows{display:grid;gap:9px}
+  .rowb{display:grid;grid-template-columns:minmax(90px,1fr) 2fr auto;gap:10px;align-items:center;font-size:.88rem}
+  .rowb .t{height:8px;border-radius:8px;background:var(--line);overflow:hidden}
+  .rowb .t i{display:block;height:100%;background:var(--violet);border-radius:8px}
+  .rowb span:last-child{color:var(--muted);font-variant-numeric:tabular-nums}
+  .funnel .rowb{grid-template-columns:150px 2fr 90px}
+  table{width:100%;border-collapse:collapse;font-size:.9rem}
+  th,td{text-align:left;padding:11px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--muted);font-weight:500;font-size:.8rem;text-transform:uppercase;letter-spacing:.06em}
+  tr.click{cursor:pointer} tr.click:hover td{background:var(--surface)}
+  .tbl{overflow:auto;border:1px solid var(--line);border-radius:18px;background:color-mix(in srgb,var(--surface) 60%,transparent)}
+  .bar-f{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
+  .bar-f select,.bar-f input{width:auto}
+  .det{display:grid;grid-template-columns:1.2fr 1fr;gap:18px}
+  .det .box p{margin-bottom:6px;font-size:.92rem}
+  .editor{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .editor textarea{min-height:420px;font-family:ui-monospace,Menlo,monospace;font-size:.88rem}
+  .prev{border:1px solid var(--line);border-radius:14px;padding:20px;max-height:520px;overflow:auto;background:var(--bg)}
+  .prev.article{padding:20px;max-width:none}
+  @media (max-width:860px){.det,.editor{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header class="solid">
+  <div class="wrap">
+    <a class="logo" href="index.html"><i>JF</i>Painel</a>
+    <div class="hright" id="hdrAct"></div>
+  </div>
+</header>
+<main class="wrap adm" id="app"><p style="color:var(--muted)">Carregando…</p></main>
+<dialog id="dlg"></dialog>
+<div class="toast" id="toast" role="status"></div>
+<script src="assets/catalogo.js"></script>
+<script src="assets/db.js"></script>
+<script src="assets/posts.js"></script>
+<script src="assets/admin.js"></script>
+</body>
+</html>
