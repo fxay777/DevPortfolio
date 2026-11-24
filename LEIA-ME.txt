@@ -17,7 +17,8 @@ public/                    >>> TUDO o que aparece no site fica aqui
   assets/catalogo.js       >>> EDITE AQUI: preços, cupons, WhatsApp, chaves públicas
   assets/ajuda.js          >>> Perguntas da Central de ajuda (o chat usa também)
   assets/posts.js          Posts iniciais do blog
-  assets/scene3d.js        Cena 3D
+  assets/scene3d.js        Cena 3D (metal líquido, chuva, relâmpagos, interação)
+  assets/chuva.js          Som ambiente de chuva (gerado no navegador)
   assets/jogo.js           Modo Explorador (missões, XP, conquistas)
   assets/criador.js        "Monte seu site em 30 segundos"
   assets/app.js            Animações, carrinho, checkout, encomenda
@@ -64,6 +65,19 @@ O QUE O SITE FAZ PARA SEGURAR O VISITANTE
   escolhe segmento, estilo, cor e recursos e vê a prévia ao vivo. O botão
   "Quero um site assim" preenche a encomenda automaticamente.
 - Quando a pessoa troca de aba, o título chama de volta.
+- Som de chuva: começa sozinho no primeiro clique (os navegadores não
+  deixam som tocar antes disso), com trovões de vez em quando que acendem
+  um relâmpago na cena 3D. Botão "Chuva" fixo no topo de todas as páginas
+  para desligar e ajustar o volume. A escolha fica salva.
+- 3D interativo: arraste o fundo para girar a forma de metal líquido,
+  clique nela para soltar uma onda de choque, e as formas fogem do cursor.
+- Cadastro completo: USUÁRIO (único, checado na hora), E-MAIL e SENHA
+  (com medidor de força e confirmação) + aceite da política de
+  privacidade. Depois do cadastro o site pede para VERIFICAR O E-MAIL
+  (com botão de reenviar) e só deixa entrar depois de confirmado.
+  O login aceita @usuário ou e-mail. Na aba "Segurança" da Área do cliente: status do e-mail,
+  2FA com app autenticador (QR code), troca de senha e "sair de todos os
+  aparelhos".
 - Painel: visitantes por dia, funil de vendas, seções mais vistas, de
   onde vieram, resultado do quiz, popup, leads, pedidos e clientes.
 
@@ -87,7 +101,8 @@ PASSO 2 - BANCO DE DADOS (Supabase, grátis) ~10 min
 2. Menu "SQL Editor" > "New query" > cole TODO o arquivo
    supabase/schema.sql > "Run".
    JÁ RODOU ANTES? Rode o arquivo inteiro de novo: ele só adiciona o que
-   falta (chamados, avaliações, pasta de arquivos) e não apaga nada.
+   falta (chamados, avaliações, arquivos, exigência de 2FA no painel)
+   e não apaga nada.
 3. Menu "Project Settings" > "API Keys":
    - copie a "Project URL"          -> supabaseUrl  no catalogo.js
    - copie a "Publishable key"      -> supabaseKey  no catalogo.js
@@ -98,8 +113,20 @@ PASSO 2 - BANCO DE DADOS (Supabase, grátis) ~10 min
    Site URL = o endereço do seu site (ex.: https://jacksonfb-portfolio.SEU-USUARIO.workers.dev
               ou o seu domínio)
    Redirect URLs: adicione  https://SEU-ENDERECO/cliente  e  https://SEU-ENDERECO/cliente.html
-5. (Recomendado) "Authentication" > "Emails": personalize em português
-   o e-mail de confirmação e o de redefinição de senha.
+5. "Authentication" > "Sign In / Providers" > Email: deixe LIGADO
+   "Confirm email" (é isso que obriga a verificar o e-mail).
+   O 2FA por app (TOTP) já vem ligado em todo projeto Supabase.
+6. OBRIGATÓRIO PARA O E-MAIL DE VERIFICAÇÃO CHEGAR AOS CLIENTES:
+   o envio padrão do Supabase só entrega para você mesmo (equipe do
+   projeto) e no máximo 2 por hora. Ligue um serviço de e-mail:
+   a) Crie conta grátis na Brevo (brevo.com) ou na Resend (resend.com).
+      - Brevo: dá para usar com um e-mail seu verificado como remetente.
+      - Resend: precisa de um domínio seu (ex.: jacksonfb.com.br).
+   b) Pegue os dados de SMTP (servidor, porta, usuário, senha/chave).
+   c) Supabase > Authentication > Emails > SMTP Settings >
+      "Enable custom SMTP" e cole os dados. Remetente: o seu e-mail.
+   d) Em "Templates" > "Confirm signup", troque o texto para português.
+   Pronto: quem se cadastrar recebe o link de confirmação de verdade.
 
 ======================================================================
 PASSO 3 - VIRAR ADMINISTRADOR
@@ -108,7 +135,12 @@ PASSO 3 - VIRAR ADMINISTRADOR
 2. Confirme o e-mail.
 3. No Supabase > SQL Editor rode (com o SEU e-mail):
    insert into public.admins (user_id) select id from auth.users where email = 'SEU@EMAIL.com';
-4. Abra seu-site/admin.html. Na aba Blog clique em
+4. OBRIGATÓRIO: ative o 2FA na sua conta (Área do cliente > Segurança >
+   Ativar 2FA). O painel só abre depois de digitar o código do app:
+   mesmo que alguém descubra sua senha, não entra no painel.
+   Se perder o celular: Supabase > Authentication > Users > seu usuário >
+   remova o fator MFA e ative de novo.
+5. Abra seu-site/admin.html. Na aba Blog clique em
    "Importar os 3 posts iniciais" para poder editá-los.
 
 ======================================================================

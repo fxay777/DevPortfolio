@@ -122,6 +122,44 @@ async function checkout(request, env) {
   }
 }
 
+/* ---------- POST /api/entrar  (login com nome de usuário) ---------- */
+// O navegador manda usuário + senha; o servidor descobre o e-mail (sem nunca devolvê-lo)
+// e pede a sessão ao Supabase. Assim ninguém consegue descobrir o e-mail de outra pessoa.
+async function entrar(request, env) {
+  if (request.method !== 'POST') return json({ erro: 'Método não permitido' }, 405, { Allow: 'POST' });
+  const db = banco(env), pub = CONFIG.supabaseKey, url = env.SUPABASE_URL || CONFIG.supabaseUrl;
+  if (!db.ativo || !pub || !url) return json({ erro: 'Login por usuário não configurado' }, 503);
+  let body = {}; try { body = (await request.json()) || {}; } catch {}
+  const usuario = String(body.usuario || '').trim().toLowerCase().replace(/^@/, '');
+  const senha = String(body.senha || '');
+  const invalido = () => json({ erro: 'Invalid login credentials' }, 400);
+  if (!/^[a-z0-9_.]{3,20}$/.test(usuario) || !senha || senha.length > 200) return invalido();
+  try {
+    const [p] = (await db.rest(`perfis?usuario=eq.${encodeURIComponent(usuario)}&select=email`)) || [];
+    if (!p || !p.email) return invalido();
+    const r = await fetch(`${url.replace(/\/$/, '')}/auth/v1/token?grant_type=password`, {
+      method: 'POST',
+      headers: { apikey: pub, 'Content-Type': 'application/json', 'X-Forwarded-For': request.headers.get('CF-Connecting-IP') || '' },
+      body: JSON.stringify({ email: p.email, password: senha }),
+    });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      const msg = d.error_description || d.msg || d.message || d.error || '';
+      if (/not confirmed/i.test(msg)) return json({ erro: 'Email not confirmed', email: mascarar(p.email) }, 400);
+      return invalido();
+    }
+    return json({ access_token: d.access_token, refresh_token: d.refresh_token });
+  } catch (e) {
+    console.error(e.message);
+    return json({ erro: 'Falha ao entrar' }, 502);
+  }
+}
+// mostra só um pedaço do e-mail (ex.: jo***@gm***.com) para a pessoa reconhecer o dela
+function mascarar(e) {
+  const [a, b = ''] = String(e).split('@'); const [dom, ...tld] = b.split('.');
+  return `${a.slice(0, 2)}***@${dom.slice(0, 2)}***.${tld.join('.')}`;
+}
+
 /* ---------- POST /api/webhook-mp ---------- */
 // Não confia no conteúdo do aviso: consulta o pagamento direto na API do Mercado Pago.
 async function webhook(request, env, url) {
@@ -168,6 +206,7 @@ export default {
     const url = new URL(request.url);
     if (url.pathname === '/api/checkout') return checkout(request, env);
     if (url.pathname === '/api/webhook-mp') return webhook(request, env, url);
+    if (url.pathname === '/api/entrar') return entrar(request, env);
     if (url.pathname.startsWith('/api/')) return json({ erro: 'Não encontrado' }, 404);
     return env.ASSETS.fetch(request);
   },
