@@ -10,11 +10,21 @@ create table if not exists public.admins (
 alter table public.admins enable row level security;
 -- (sem policies: ninguém lê/escreve pelo site; você se adiciona pelo SQL, veja o fim do arquivo)
 
+-- Administrador só tem poderes depois de confirmar o 2FA no login (nível "aal2").
+-- Assim, mesmo que alguém descubra sua senha, não entra no painel sem o código do seu celular.
 create or replace function public.is_admin() returns boolean
+language sql stable security definer set search_path = public as $$
+  select exists (select 1 from public.admins where user_id = auth.uid())
+     and coalesce(auth.jwt()->>'aal', 'aal1') = 'aal2';
+$$;
+grant execute on function public.is_admin() to anon, authenticated;
+
+-- usado pelo painel para saber se deve pedir o 2FA (não dá nenhum poder)
+create or replace function public.admin_cadastrado() returns boolean
 language sql stable security definer set search_path = public as $$
   select exists (select 1 from public.admins where user_id = auth.uid());
 $$;
-grant execute on function public.is_admin() to anon, authenticated;
+grant execute on function public.admin_cadastrado() to authenticated;
 
 -- ---------- perfis dos clientes ----------
 create table if not exists public.perfis (
@@ -25,6 +35,23 @@ create table if not exists public.perfis (
   criado_em timestamptz not null default now()
 );
 alter table public.perfis add column if not exists email text;
+-- nome de usuário único (minúsculas, 3 a 20 caracteres: letras, números, _ e .)
+alter table public.perfis add column if not exists usuario text;
+do $$ begin
+  if not exists (select 1 from pg_constraint where conname = 'perfis_usuario_formato') then
+    alter table public.perfis add constraint perfis_usuario_formato check (usuario ~ '^[a-z0-9_.]{3,20}$');
+  end if;
+end $$;
+create unique index if not exists perfis_usuario_unico on public.perfis (usuario);
+
+-- o site pergunta se um usuário está livre antes de cadastrar
+create or replace function public.usuario_disponivel(u text) returns boolean
+language sql stable security definer set search_path = public as $$
+  select lower(u) ~ '^[a-z0-9_.]{3,20}$'
+     and lower(u) not in ('admin','administrador','suporte','jackson','jacksonfb','root','sistema')
+     and not exists (select 1 from public.perfis where usuario = lower(u));
+$$;
+grant execute on function public.usuario_disponivel(text) to anon, authenticated;
 alter table public.perfis enable row level security;
 drop policy if exists perfis_dono on public.perfis;
 create policy perfis_dono on public.perfis for all to authenticated
@@ -33,7 +60,7 @@ create policy perfis_dono on public.perfis for all to authenticated
 -- o cliente não pode trocar o e-mail do perfil pelo site
 create or replace function public.perfil_protege() returns trigger language plpgsql as $$
 begin
-  if not public.is_admin() then new.email = old.email; new.id = old.id; end if;
+  if not public.is_admin() then new.email = old.email; new.id = old.id; new.usuario = old.usuario; end if;
   return new;
 end $$;
 drop trigger if exists perfil_protege on public.perfis;
@@ -42,9 +69,16 @@ create trigger perfil_protege before update on public.perfis for each row execut
 -- cria o perfil automaticamente quando alguém se cadastra
 create or replace function public.novo_usuario() returns trigger
 language plpgsql security definer set search_path = public as $$
+declare u text := lower(trim(new.raw_user_meta_data->>'usuario'));
 begin
-  insert into public.perfis (id, nome, whatsapp, email)
-  values (new.id, left(new.raw_user_meta_data->>'nome', 120), left(new.raw_user_meta_data->>'whatsapp', 30), lower(new.email))
+  if u is null or u = '' then  -- conta criada fora do site (ex.: painel do Supabase)
+    u := 'user_' || substr(replace(new.id::text, '-', ''), 1, 8);
+  end if;
+  if not public.usuario_disponivel(u) then
+    raise exception 'usuario_indisponivel' using errcode = '23505';
+  end if;
+  insert into public.perfis (id, usuario, nome, whatsapp, email)
+  values (new.id, u, left(coalesce(new.raw_user_meta_data->>'nome', u), 120), left(new.raw_user_meta_data->>'whatsapp', 30), lower(new.email))
   on conflict (id) do nothing;
   return new;
 end $$;

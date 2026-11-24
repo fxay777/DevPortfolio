@@ -10,24 +10,67 @@ const toast = (t) => { const e = $('#toast'); e.textContent = t; e.classList.add
 const next = new URLSearchParams(location.search).get('next');
 
 if (!DB.ativo) {
-  app.innerHTML = `<div class="auth"><span class="eyebrow">Área do cliente</span><h1>Acompanhe seu projeto</h1>
-    <p class="note-box" style="margin-top:20px">A área do cliente ainda está sendo ativada. Enquanto isso, acompanhe seu pedido direto comigo pelo WhatsApp.</p>
+  app.innerHTML = `<div class="auth"><span class="eyebrow">Área do cliente</span><h1>Cadastro em configuração</h1>
+    <p class="note-box warn" style="margin-top:20px">O cadastro e o login ficam disponíveis assim que o banco de dados (Supabase) estiver conectado.
+    Enquanto isso, fale comigo direto pelo WhatsApp.</p>
     <a class="btn wa full" style="margin-top:16px" href="${waLink('Olá Jackson! Quero saber o status do meu pedido.')}" target="_blank" rel="noopener">Falar no WhatsApp</a></div>`;
   return;
 }
 const sb = await DB.client();
 if (!sb) { app.innerHTML = '<p class="note-box warn">Não foi possível conectar. Verifique sua internet e recarregue a página.</p>'; return; }
 
-let modo = 'entrar';
+let modo = 'entrar', emailPendente = DB.ls.get('jf-verificar', '') || '', emailMascara = '';
 sb.auth.onAuthStateChange((ev) => {
   if (ev === 'PASSWORD_RECOVERY') { modo = 'nova-senha'; telaAuth(); }
   if (ev === 'SIGNED_OUT') { modo = 'entrar'; telaAuth(); }
 });
+const URL_AQUI = location.origin + location.pathname;
+
+/* ---------- força da senha ---------- */
+function forca(sen) {
+  let p = 0;
+  if (sen.length >= 8) p++; if (sen.length >= 12) p++;
+  if (/[a-z]/.test(sen) && /[A-Z]/.test(sen)) p++;
+  if (/\d/.test(sen)) p++; if (/[^A-Za-z0-9]/.test(sen)) p++;
+  if (/^(.)\1+$/.test(sen) || /^(12345|senha|password|qwerty)/i.test(sen)) p = 0;
+  return Math.min(p, 4);
+}
+const NIVEL_SENHA = [['Muito fraca', '#f87171'], ['Fraca', '#fb923c'], ['Média', '#fbbf24'], ['Boa', '#a3e635'], ['Forte', '#4ade80']];
+const medidor = (nome) => `<div class="senha-med" data-med="${nome}"><i></i><i></i><i></i><i></i><span>Use 8+ caracteres, com letras maiúsculas, números e símbolos</span></div>`;
+function ligaMedidor(f, nome) {
+  const inp = f[nome], med = f.querySelector(`[data-med="${nome}"]`); if (!inp || !med) return;
+  inp.addEventListener('input', () => {
+    const v = inp.value, n = forca(v), [t, c] = NIVEL_SENHA[n];
+    med.querySelectorAll('i').forEach((el, k) => { el.style.background = v && k < Math.max(1, n) ? c : ''; });
+    med.querySelector('span').textContent = v ? `Senha ${t.toLowerCase()}` : 'Use 8+ caracteres, com letras maiúsculas, números e símbolos';
+    med.querySelector('span').style.color = v ? c : '';
+  });
+}
+const olho = '<button type="button" class="olho" data-olho aria-label="Mostrar senha">👁</button>';
+app.addEventListener('click', (e) => {
+  const o = e.target.closest('[data-olho]'); if (!o) return;
+  const inp = o.previousElementSibling; inp.type = inp.type === 'password' ? 'text' : 'password';
+  o.setAttribute('aria-label', inp.type === 'password' ? 'Mostrar senha' : 'Esconder senha');
+});
+
+async function precisa2FA() {
+  try {
+    const { data, error } = await sb.auth.mfa.getAuthenticatorAssuranceLevel();
+    return !error && data && data.nextLevel === 'aal2' && data.currentLevel !== 'aal2';
+  } catch { return false; }
+}
 
 async function iniciar() {
+  const h = location.hash;
   const { data: { session } } = await sb.auth.getSession();
-  if (location.hash.includes('type=recovery')) { modo = 'nova-senha'; return telaAuth(); }
-  if (!session) return telaAuth(location.hash === '#suporte' ? 'Entre ou crie sua conta para abrir um chamado. É rapidinho!' : location.hash === '#arquivos' ? 'Entre para enviar seus arquivos.' : '');
+  if (h.includes('type=recovery')) { modo = 'nova-senha'; return telaAuth(); }
+  if (!session) return telaAuth(h === '#suporte' ? 'Entre ou crie sua conta para abrir um chamado. É rapidinho!' : h === '#arquivos' ? 'Entre para enviar seus arquivos.' : '');
+  if (/type=(signup|email|magiclink)/.test(h) || h.includes('access_token')) {
+    history.replaceState(null, '', location.pathname + location.search);
+    DB.ls.set('jf-verificar', '');
+    toast('✓ E-mail confirmado! Bem-vindo(a).');
+  }
+  if (await precisa2FA()) { modo = '2fa'; return telaAuth(); }
   if (next === 'admin') { location.href = 'admin.html'; return; }
   painel(session.user);
 }
@@ -37,55 +80,147 @@ function telaAuth(msg = '', tipo = '') {
   const prev = DB.ls.get('jf-cliente', {}) || {};
   const tabs = modo === 'entrar' || modo === 'criar'
     ? `<div class="tabs" role="tablist"><button data-m="entrar" class="${modo === 'entrar' ? 'on' : ''}">Entrar</button><button data-m="criar" class="${modo === 'criar' ? 'on' : ''}">Criar conta</button></div>` : '';
-  let form = '';
-  if (modo === 'entrar') form = `<form id="af"><input class="field" name="email" type="email" placeholder="Seu e-mail" autocomplete="email" required value="${esc(prev.email || '')}">
-      <input class="field" name="senha" type="password" placeholder="Senha" autocomplete="current-password" required minlength="6">
+  let form = '', titulo = 'Acompanhe seu projeto', sub = 'Veja o status dos seus pedidos, as atualizações do projeto e fale comigo quando quiser.';
+  if (modo === 'entrar') form = `<form id="af"><input class="field" name="login" placeholder="E-mail ou usuário" autocomplete="username" autocapitalize="none" spellcheck="false" required value="${esc(prev.usuario ? '@' + prev.usuario : prev.email || '')}">
+      <div class="campo-senha"><input class="field" name="senha" type="password" placeholder="Senha" autocomplete="current-password" required minlength="6">${olho}</div>
       <button class="btn primary full">Entrar <span class="arr">→</span></button>
-      <button type="button" class="again" data-m="esqueci" style="background:none;border:0;color:var(--muted);text-decoration:underline;cursor:pointer">Esqueci minha senha</button></form>`;
-  if (modo === 'criar') form = `<form id="af"><input class="field" name="nome" placeholder="Nome" autocomplete="name" required value="${esc(prev.nome || '')}">
-      <input class="field" name="whatsapp" placeholder="WhatsApp com DDD" inputmode="tel" autocomplete="tel" value="${esc(prev.whatsapp || '')}">
-      <input class="field" name="email" type="email" placeholder="E-mail (use o mesmo do pedido)" autocomplete="email" required value="${esc(prev.email || '')}">
-      <input class="field" name="senha" type="password" placeholder="Crie uma senha (mín. 6 caracteres)" autocomplete="new-password" required minlength="6">
-      <button class="btn primary full">Criar minha conta <span class="arr">→</span></button></form>`;
-  if (modo === 'esqueci') form = `<form id="af"><p class="sm" style="color:var(--muted)">Digite seu e-mail e eu te mando um link para criar uma nova senha.</p>
+      <button type="button" class="linkbtn" data-m="esqueci">Esqueci minha senha</button></form>`;
+  if (modo === 'criar') { titulo = 'Crie sua conta'; sub = 'Escolha um usuário, informe seu e-mail e crie uma senha. Depois é só confirmar o e-mail.';
+    form = `<form id="af"><label class="lbl-c">Usuário</label>
+      <div class="campo-user"><span>@</span><input class="field" name="usuario" placeholder="seu.usuario" autocomplete="username" autocapitalize="none" spellcheck="false" required minlength="3" maxlength="20" pattern="[a-zA-Z0-9_.]{3,20}"></div>
+      <small class="user-st" id="userSt">3 a 20 caracteres: letras, números, _ ou .</small>
+      <label class="lbl-c">E-mail</label>
+      <input class="field" name="email" type="email" placeholder="voce@email.com" autocomplete="email" required value="${esc(prev.email || '')}">
+      <label class="lbl-c">Senha</label>
+      <div class="campo-senha"><input class="field" name="senha" type="password" placeholder="Crie uma senha" autocomplete="new-password" required minlength="8">${olho}</div>
+      ${medidor('senha')}
+      <input class="field" name="senha2" type="password" placeholder="Repita a senha" autocomplete="new-password" required>
+      <label class="aceite"><input type="checkbox" name="termos" required> Li e aceito a <a class="link" href="privacidade.html" target="_blank">política de privacidade</a>.</label>
+      <button class="btn primary full">Criar minha conta <span class="arr">→</span></button></form>`; }
+  if (modo === 'verificar') { titulo = 'Confirme seu e-mail'; sub = '';
+    form = `<div class="verif"><div class="verif-ic">✉️</div>
+      <p>Enviei um link de confirmação para<br><b>${esc(emailPendente || emailMascara || 'o seu e-mail')}</b></p>
+      ${emailPendente ? '' : '<input class="field" id="emailReenv" type="email" placeholder="Digite seu e-mail para reenviar" autocomplete="email">'}
+      <ol><li>Abra seu e-mail (veja também o <b>spam</b> e a aba <b>Promoções</b>)</li><li>Clique em <b>Confirmar e-mail</b></li><li>Você volta para cá já com a conta ativa</li></ol>
+      <button class="btn primary full" id="reenv">Reenviar e-mail</button>
+      <button class="btn full" data-m="entrar">Já confirmei, quero entrar</button>
+      <button type="button" class="linkbtn" data-m="criar">Usar outro e-mail</button></div>`; }
+  if (modo === '2fa') { titulo = 'Verificação em duas etapas'; sub = 'Abra o app autenticador do seu celular e digite o código de 6 números.';
+    form = `<form id="af"><input class="field codigo" name="codigo" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" placeholder="000000" required autofocus>
+      <button class="btn primary full">Verificar <span class="arr">→</span></button>
+      <a class="linkbtn" target="_blank" rel="noopener" href="${waLink('Olá Jackson! Perdi acesso ao meu app autenticador (2FA) da Área do cliente.')}">Perdi o celular / não tenho o código</a>
+      <button type="button" class="linkbtn" id="sair2fa">Sair</button></form>`; }
+  if (modo === 'esqueci') { titulo = 'Recuperar acesso'; sub = '';
+    form = `<form id="af"><p class="sm" style="color:var(--muted)">Digite seu e-mail e eu te mando um link para criar uma nova senha.</p>
       <input class="field" name="email" type="email" placeholder="Seu e-mail" autocomplete="email" required>
-      <button class="btn primary full">Enviar link</button><button type="button" class="btn full" data-m="entrar">Voltar</button></form>`;
-  if (modo === 'nova-senha') form = `<form id="af"><p class="sm" style="color:var(--muted)">Escolha sua nova senha.</p>
-      <input class="field" name="senha" type="password" placeholder="Nova senha (mín. 6 caracteres)" autocomplete="new-password" required minlength="6">
-      <button class="btn primary full">Salvar nova senha</button></form>`;
-  app.innerHTML = `<div class="auth"><span class="eyebrow">Área do cliente</span><h1>${modo === 'criar' ? 'Crie sua conta' : modo === 'entrar' ? 'Acompanhe seu projeto' : 'Recuperar acesso'}</h1>
-    <p style="color:var(--muted)">Veja o status dos seus pedidos, as atualizações do projeto e fale comigo quando quiser.</p>
-    ${tabs}${msg ? `<p class="note-box ${tipo}" style="margin-top:16px">${msg}</p>` : ''}${form}</div>`;
+      <button class="btn primary full">Enviar link</button><button type="button" class="btn full" data-m="entrar">Voltar</button></form>`; }
+  if (modo === 'nova-senha') { titulo = 'Nova senha'; sub = '';
+    form = `<form id="af"><div class="campo-senha"><input class="field" name="senha" type="password" placeholder="Nova senha" autocomplete="new-password" required minlength="8">${olho}</div>
+      ${medidor('senha')}<input class="field" name="senha2" type="password" placeholder="Repita a nova senha" autocomplete="new-password" required>
+      <button class="btn primary full">Salvar nova senha</button></form>`; }
+  app.innerHTML = `<div class="auth"><span class="eyebrow">Área do cliente</span><h1>${titulo}</h1>
+    ${sub ? `<p style="color:var(--muted)">${sub}</p>` : ''}
+    ${tabs}${msg ? `<p class="note-box ${tipo}" style="margin-top:16px">${msg}</p>` : ''}${form}
+    ${modo === 'entrar' || modo === 'criar' ? '<p class="seguro">🔒 Conexão segura · senha criptografada · 2FA disponível</p>' : ''}</div>`;
   app.querySelectorAll('[data-m]').forEach((b) => { b.onclick = () => { modo = b.dataset.m; telaAuth(); }; });
-  $('#af').onsubmit = enviarAuth;
+  const f = $('#af');
+  if (f) { f.onsubmit = enviarAuth; ligaMedidor(f, 'senha'); }
+  if (modo === 'criar') {
+    const u = f.usuario, st = $('#userSt'); let tm, seq = 0;
+    u.addEventListener('input', () => {
+      u.value = u.value.toLowerCase().replace(/[^a-z0-9_.]/g, '').slice(0, 20);
+      clearTimeout(tm); u.dataset.ok = '';
+      if (u.value.length < 3) { st.textContent = '3 a 20 caracteres: letras, números, _ ou .'; st.className = 'user-st'; return; }
+      st.textContent = 'Verificando…'; st.className = 'user-st';
+      const meu = ++seq;
+      tm = setTimeout(async () => {
+        const { data: livre, error } = await sb.rpc('usuario_disponivel', { u: u.value });
+        if (meu !== seq) return;
+        if (error) { st.textContent = 'Não consegui verificar agora.'; return; }
+        u.dataset.ok = livre ? '1' : '0';
+        st.textContent = livre ? `✓ @${u.value} está disponível` : `✗ @${u.value} já está em uso`;
+        st.className = 'user-st ' + (livre ? 'ok' : 'no');
+      }, 380);
+    });
+  }
+  if (modo === '2fa') {
+    const c = f.codigo; c.focus();
+    c.addEventListener('input', () => { c.value = c.value.replace(/\D/g, '').slice(0, 6); if (c.value.length === 6) f.requestSubmit(); });
+    $('#sair2fa').onclick = () => sb.auth.signOut();
+  }
+  const rv = $('#reenv');
+  if (rv) rv.onclick = async () => {
+    const er = $('#emailReenv'); if (!emailPendente && er && /\S+@\S+\.\S+/.test(er.value)) emailPendente = er.value.trim();
+    if (!emailPendente) { toast('Digite o seu e-mail para reenviar.'); if (er) er.focus(); return; }
+    rv.disabled = true;
+    const { error } = await sb.auth.resend({ type: 'signup', email: emailPendente, options: { emailRedirectTo: URL_AQUI } });
+    if (error) { rv.disabled = false; toast(/rate|seconds/i.test(error.message) ? 'Aguarde um pouco antes de reenviar.' : 'Erro: ' + error.message); return; }
+    toast('✓ E-mail reenviado!');
+    let n = 60; const tm = setInterval(() => { rv.textContent = `Reenviar em ${--n}s`; if (n <= 0) { clearInterval(tm); rv.disabled = false; rv.textContent = 'Reenviar e-mail'; } }, 1000);
+  };
 }
 
 async function enviarAuth(e) {
   e.preventDefault();
   const f = e.target, b = f.querySelector('.btn.primary'); b.disabled = true;
   const v = (n) => (f[n] ? f[n].value.trim() : '');
-  const url = location.origin + location.pathname;
+  const erro = (t) => { b.disabled = false; let el = f.querySelector('.err'); if (!el) { el = document.createElement('p'); el.className = 'err'; f.prepend(el); } el.textContent = t; };
   try {
     if (modo === 'entrar') {
-      const { error } = await sb.auth.signInWithPassword({ email: v('email'), password: f.senha.value });
-      if (error) throw error;
+      const login = v('login');
+      const naoConfirmado = (email, mascara) => { emailPendente = email || ''; emailMascara = mascara || ''; if (email) DB.ls.set('jf-verificar', email); modo = 'verificar'; return telaAuth('Seu e-mail ainda não foi confirmado. Confirme pelo link que enviei ou peça um novo abaixo.', 'warn'); };
+      if (login.includes('@') && !login.startsWith('@')) {
+        const { error } = await sb.auth.signInWithPassword({ email: login, password: f.senha.value });
+        if (error) { if (/not confirmed/i.test(error.message)) return naoConfirmado(login); throw error; }
+      } else {
+        // login com nome de usuário: o servidor resolve sem expor o e-mail
+        const r = await fetch('/api/entrar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ usuario: login, senha: f.senha.value }) });
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok) {
+          if (/not confirmed/i.test(d.erro || '')) return naoConfirmado('', d.email);
+          if (r.status === 503 || r.status === 404) throw new Error('Entrar com usuário ainda não está ativo. Use seu e-mail.');
+          throw new Error(d.erro || 'Invalid login');
+        }
+        const { error } = await sb.auth.setSession({ access_token: d.access_token, refresh_token: d.refresh_token });
+        if (error) throw error;
+      }
       return iniciar();
     }
     if (modo === 'criar') {
-      const { data: d, error } = await sb.auth.signUp({ email: v('email'), password: f.senha.value, options: { data: { nome: v('nome'), whatsapp: v('whatsapp') }, emailRedirectTo: url } });
-      if (error) throw error;
-      DB.ls.set('jf-cliente', { nome: v('nome'), whatsapp: v('whatsapp'), email: v('email') });
+      const usuario = v('usuario').toLowerCase();
+      if (!/^[a-z0-9_.]{3,20}$/.test(usuario)) return erro('Usuário inválido: use 3 a 20 caracteres (letras, números, _ ou .).');
+      if (f.usuario.dataset.ok === '0') return erro(`@${usuario} já está em uso. Escolha outro.`);
+      if (!f.usuario.dataset.ok) { const { data: livre } = await sb.rpc('usuario_disponivel', { u: usuario }); if (!livre) return erro(`@${usuario} já está em uso. Escolha outro.`); }
+      if (f.senha.value.length < 8 || forca(f.senha.value) < 2) return erro('Escolha uma senha mais forte: 8+ caracteres misturando letras, números ou símbolos.');
+      if (f.senha.value !== f.senha2.value) return erro('As senhas não são iguais.');
+      if (!f.termos.checked) return erro('Aceite a política de privacidade para continuar.');
+      const { data: d, error } = await sb.auth.signUp({ email: v('email'), password: f.senha.value, options: { data: { usuario, nome: usuario }, emailRedirectTo: URL_AQUI } });
+      if (error) { if (/database error|usuario_indisponivel/i.test(error.message)) return erro(`@${usuario} acabou de ser usado por outra pessoa. Escolha outro.`); throw error; }
+      DB.ls.set('jf-cliente', { ...(DB.ls.get('jf-cliente', {}) || {}), usuario, email: v('email') });
+      if (DB.track) DB.track('cadastro');
       if (d.session) return iniciar();
-      modo = 'entrar';
-      return telaAuth(`Quase lá! Enviei um link de confirmação para <b>${esc(v('email'))}</b>. Abra seu e-mail, confirme e depois entre aqui.`, 'ok');
+      if (d.user && Array.isArray(d.user.identities) && d.user.identities.length === 0) { modo = 'entrar'; return telaAuth('Esse e-mail já tem conta. Entre com sua senha ou use "Esqueci minha senha".', 'warn'); }
+      emailPendente = v('email'); emailMascara = ''; DB.ls.set('jf-verificar', emailPendente);
+      modo = 'verificar'; return telaAuth();
+    }
+    if (modo === '2fa') {
+      const { data: fs, error: e0 } = await sb.auth.mfa.listFactors(); if (e0) throw e0;
+      const fac = ((fs && fs.totp) || []).find((x) => x.status === 'verified') || ((fs && fs.totp) || [])[0];
+      if (!fac) return iniciar();
+      const { data: ch, error: e1 } = await sb.auth.mfa.challenge({ factorId: fac.id }); if (e1) throw e1;
+      const { error: e2 } = await sb.auth.mfa.verify({ factorId: fac.id, challengeId: ch.id, code: v('codigo') }); if (e2) throw e2;
+      toast('✓ Verificado!');
+      return iniciar();
     }
     if (modo === 'esqueci') {
-      const { error } = await sb.auth.resetPasswordForEmail(v('email'), { redirectTo: url });
+      const { error } = await sb.auth.resetPasswordForEmail(v('email'), { redirectTo: URL_AQUI });
       if (error) throw error;
       modo = 'entrar';
       return telaAuth('Se existir uma conta com esse e-mail, você vai receber o link em instantes. Confira também o spam.', 'ok');
     }
     if (modo === 'nova-senha') {
+      if (f.senha.value.length < 8 || forca(f.senha.value) < 2) return erro('Escolha uma senha mais forte.');
+      if (f.senha.value !== f.senha2.value) return erro('As senhas não são iguais.');
       const { error } = await sb.auth.updateUser({ password: f.senha.value });
       if (error) throw error;
       history.replaceState(null, '', location.pathname);
@@ -93,15 +228,19 @@ async function enviarAuth(e) {
       return iniciar();
     }
   } catch (err) {
-    b.disabled = false;
     const m = String(err.message || err);
-    const traduz = /Invalid login/i.test(m) ? 'E-mail ou senha incorretos.' : /not confirmed/i.test(m) ? 'Confirme seu e-mail antes de entrar (veja sua caixa de entrada).' : /already registered/i.test(m) ? 'Esse e-mail já tem conta. Use a aba Entrar.' : /Password should/i.test(m) ? 'A senha precisa ter pelo menos 6 caracteres.' : /rate limit/i.test(m) ? 'Muitas tentativas. Aguarde alguns minutos.' : 'Não deu certo: ' + esc(m);
-    let el = f.querySelector('.err'); if (!el) { el = document.createElement('p'); el.className = 'err'; f.prepend(el); }
-    el.textContent = traduz;
+    erro(/Invalid login/i.test(m) ? 'Usuário/e-mail ou senha incorretos.'
+      : /invalid.*(code|totp)|code.*(invalid|expired)/i.test(m) ? 'Código incorreto ou expirado. Confira o app e tente de novo.'
+      : /already registered|already been registered/i.test(m) ? 'Esse e-mail já tem conta. Use a aba Entrar.'
+      : /Password should|weak/i.test(m) ? 'Senha fraca demais. Use 8+ caracteres com letras, números e símbolos.'
+      : /rate limit|too many/i.test(m) ? 'Muitas tentativas. Aguarde alguns minutos.'
+      : /same.*password|different from the old/i.test(m) ? 'A nova senha precisa ser diferente da atual.'
+      : 'Não deu certo: ' + m);
+    if (modo === '2fa') { f.codigo.value = ''; f.codigo.focus(); }
   }
 }
 
-const ABAS = [['pedidos', 'Meus pedidos'], ['suporte', 'Suporte'], ['arquivos', 'Arquivos'], ['dados', 'Meus dados']];
+const ABAS = [['pedidos', 'Meus pedidos'], ['suporte', 'Suporte'], ['arquivos', 'Arquivos'], ['seguranca', 'Segurança'], ['dados', 'Meus dados']];
 const TIPOS = { duvida: 'Dúvida', alteracao: 'Alteração', problema: 'Problema no site', financeiro: 'Financeiro', outro: 'Outro' };
 const ST_CH = { aberto: ['Aguardando resposta', '#fbbf24'], respondido: ['Respondido', '#4ade80'], fechado: ['Resolvido', '#9a95b8'] };
 let U = null, P = null, PEDIDOS = [], CHAMADOS = [], AVALS = [], aba = (location.hash.slice(1) || 'pedidos');
@@ -121,11 +260,12 @@ async function painel(user) {
     sb.from('avaliacoes').select('*').eq('user_id', user.id),
   ]);
   P = perfil || {}; PEDIDOS = pedidos || []; CHAMADOS = chs || []; AVALS = avs || [];
-  const nome = P.nome || (user.user_metadata && user.user_metadata.nome) || user.email.split('@')[0];
+  const usuario = P.usuario || (user.user_metadata && user.user_metadata.usuario) || '';
+  const nome = P.nome && P.nome !== usuario ? P.nome : usuario ? '@' + usuario : user.email.split('@')[0];
   $('#hdrAct').innerHTML = `${admin ? '<a class="btn" href="admin.html">Painel</a>' : ''}<a class="btn" href="ajuda.html">Ajuda</a><button class="btn" id="sair">Sair</button>`;
   $('#sair').onclick = () => sb.auth.signOut();
   const resp = CHAMADOS.filter((c) => c.status === 'respondido').length;
-  app.innerHTML = `<div class="hello"><div><span class="eyebrow">Área do cliente</span><h1>Olá, ${esc(nome.split(' ')[0])}!</h1>
+  app.innerHTML = `<div class="hello"><div><span class="eyebrow">Área do cliente</span><h1>Olá, ${esc(nome.startsWith('@') ? nome : nome.split(' ')[0])}!</h1>
       <p style="color:var(--muted);margin-top:6px">${resp ? `<b style="color:var(--ok)">Você tem ${resp} resposta${resp > 1 ? 's' : ''} nova${resp > 1 ? 's' : ''} no suporte.</b>` : PEDIDOS.length ? `Você tem ${PEDIDOS.length} pedido${PEDIDOS.length > 1 ? 's' : ''}.` : 'Aqui você acompanha seus projetos.'}</p></div>
       <div class="cta" style="margin:0"><a class="btn primary" href="index.html#loja">Novo pedido</a><button class="btn" data-novo-ch>Abrir chamado</button></div></div>
     <nav class="tabs cli-tabs" style="margin:0 0 26px">${ABAS.map(([k, t]) => `<button data-aba="${k}" class="${aba === k ? 'on' : ''}">${t}${k === 'suporte' && resp ? ` <span class="count" style="display:inline-grid;min-width:20px;height:20px;font-size:.72rem">${resp}</span>` : ''}</button>`).join('')}</nav>
@@ -142,6 +282,8 @@ app.addEventListener('click', (e) => {
 
 function render() {
   const v = $('#view');
+  if (!ABAS.some(([k]) => k === aba)) aba = 'pedidos';
+  if (aba === 'seguranca') return seguranca(v);
   if (aba === 'pedidos') {
     v.innerHTML = `<div class="orders">${PEDIDOS.length ? PEDIDOS.map(cardPedido).join('') : `<div class="empty-st"><h3>Nenhum pedido ainda</h3><p>Os pedidos feitos com o e-mail <b>${esc(U.email)}</b> aparecem aqui automaticamente.</p>
       <div class="cta" style="justify-content:center"><a class="btn primary" href="index.html#loja">Ver pacotes</a><a class="btn" href="index.html#encomenda">Encomendar sob medida</a></div></div>`}</div>`;
@@ -156,7 +298,8 @@ function render() {
   if (aba === 'arquivos') arquivos(v);
   if (aba === 'dados') {
     v.innerHTML = `<form id="pf" class="order-card" style="display:grid;gap:12px;max-width:560px"><h3>Meus dados</h3>
-        <label class="sm">Nome<input class="field" name="nome" value="${esc(P.nome || '')}"></label>
+        <label class="sm">Usuário<input class="field" value="@${esc(P.usuario || '')}" disabled title="O usuário não pode ser trocado"></label>
+        <label class="sm">Nome<input class="field" name="nome" value="${esc(P.nome && P.nome !== P.usuario ? P.nome : '')}" placeholder="Seu nome (opcional)"></label>
         <label class="sm">WhatsApp<input class="field" name="whatsapp" value="${esc(P.whatsapp || '')}"></label>
         <label class="sm">E-mail da conta<input class="field" value="${esc(U.email)}" disabled></label>
         <button class="btn primary">Salvar</button></form>`;
@@ -168,6 +311,83 @@ function render() {
       toast(er ? 'Erro ao salvar: ' + er.message : '✓ Dados salvos');
     };
   }
+}
+
+/* ---------- segurança: e-mail, 2FA, senha, sessões ---------- */
+async function seguranca(v) {
+  v.innerHTML = '<p style="color:var(--muted)">Carregando…</p>';
+  const [{ data: ud }, { data: fs }] = await Promise.all([sb.auth.getUser(), sb.auth.mfa.listFactors()]);
+  const user = (ud && ud.user) || U;
+  const ativos = ((fs && fs.totp) || []).filter((f) => f.status === 'verified');
+  const verificado = !!(user.email_confirmed_at || user.confirmed_at);
+  v.innerHTML = `<div class="seg-grid">
+    <div class="order-card seg"><div class="seg-h"><span class="seg-ic">✉️</span><div><h3>E-mail</h3><p>${esc(user.email)}</p></div>
+      <span class="pill" style="color:${verificado ? 'var(--ok)' : '#fbbf24'}">${verificado ? 'Verificado' : 'Não verificado'}</span></div>
+      ${verificado ? '<p class="sm">Seu e-mail foi confirmado. É por ele que você recupera o acesso.</p>' : '<button class="btn" id="reenvSeg">Reenviar e-mail de verificação</button>'}</div>
+    <div class="order-card seg" id="segMfa"><div class="seg-h"><span class="seg-ic">🔐</span><div><h3>Verificação em duas etapas (2FA)</h3><p>Além da senha, o login pede um código do app autenticador do seu celular.</p></div>
+      <span class="pill" style="color:${ativos.length ? 'var(--ok)' : 'var(--muted)'}">${ativos.length ? 'Ativada' : 'Desativada'}</span></div>
+      <div id="mfaBox">${ativos.length
+        ? `<p class="sm">📱 ${esc(ativos[0].friendly_name || 'App autenticador')} · ativada em ${data(ativos[0].created_at)}</p><button class="rm" id="mfaOff" style="color:#f87171">Desativar 2FA</button>`
+        : '<button class="btn primary" id="mfaOn">Ativar 2FA</button><p class="sm" style="margin-top:10px">Funciona com Google Authenticator, Microsoft Authenticator, Authy ou 1Password.</p>'}</div></div>
+    <form class="order-card seg" id="fsenha"><div class="seg-h"><span class="seg-ic">🔑</span><div><h3>Trocar senha</h3><p>Escolha uma senha que você não usa em outros sites.</p></div></div>
+      <div class="campo-senha"><input class="field" name="senha" type="password" placeholder="Nova senha" autocomplete="new-password" required minlength="8">${olho}</div>
+      ${medidor('senha')}<input class="field" name="senha2" type="password" placeholder="Repita a nova senha" autocomplete="new-password" required>
+      <p class="err"></p><button class="btn">Salvar nova senha</button></form>
+    <div class="order-card seg"><div class="seg-h"><span class="seg-ic">💻</span><div><h3>Aparelhos conectados</h3><p>Último acesso: ${user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '—'}</p></div></div>
+      <p class="sm">Esqueceu a conta aberta em outro computador? Saia de todos de uma vez.</p><button class="btn" id="sairTodos">Sair de todos os aparelhos</button></div>
+  </div>`;
+  const rs = $('#reenvSeg', v);
+  if (rs) rs.onclick = async () => { const { error } = await sb.auth.resend({ type: 'signup', email: user.email, options: { emailRedirectTo: URL_AQUI } }); toast(error ? 'Aguarde um pouco antes de reenviar.' : '✓ E-mail reenviado!'); };
+  const fsn = $('#fsenha', v); ligaMedidor(fsn, 'senha');
+  fsn.onsubmit = async (e) => {
+    e.preventDefault(); const f = e.target, er = f.querySelector('.err');
+    if (f.senha.value.length < 8 || forca(f.senha.value) < 2) { er.textContent = 'Escolha uma senha mais forte.'; return; }
+    if (f.senha.value !== f.senha2.value) { er.textContent = 'As senhas não são iguais.'; return; }
+    const { error } = await sb.auth.updateUser({ password: f.senha.value });
+    if (error) { er.textContent = /reauth|recent/i.test(error.message) ? 'Por segurança, saia e entre de novo antes de trocar a senha.' : /different|same/i.test(error.message) ? 'A nova senha precisa ser diferente da atual.' : error.message; return; }
+    f.reset(); er.textContent = ''; toast('✓ Senha alterada!');
+  };
+  $('#sairTodos', v).onclick = async () => { if (!confirm('Sair da sua conta em todos os aparelhos, inclusive neste?')) return; await sb.auth.signOut({ scope: 'global' }); };
+  const off = $('#mfaOff', v);
+  if (off) off.onclick = async () => {
+    if (!confirm('Desativar a verificação em duas etapas? Sua conta fica protegida só pela senha.')) return;
+    const { error } = await sb.auth.mfa.unenroll({ factorId: ativos[0].id });
+    if (error) { toast(/aal2|assurance/i.test(error.message) ? 'Para desativar, saia e entre de novo usando o código do app.' : 'Erro: ' + error.message); return; }
+    await sb.auth.refreshSession(); toast('2FA desativada'); seguranca(v);
+  };
+  const on = $('#mfaOn', v);
+  if (on) on.onclick = async () => {
+    on.disabled = true;
+    // limpa tentativas antigas que não foram concluídas
+    for (const f of ((fs && fs.all) || []).filter((x) => x.factor_type === 'totp' && x.status !== 'verified')) await sb.auth.mfa.unenroll({ factorId: f.id });
+    const { data: en, error } = await sb.auth.mfa.enroll({ factorType: 'totp', friendlyName: 'Celular ' + new Date().toLocaleDateString('pt-BR') });
+    if (error) { on.disabled = false; toast('Erro: ' + error.message); return; }
+    const qr = (en.totp && en.totp.qr_code) || '';
+    const src = qr.startsWith('data:') ? qr : 'data:image/svg+xml;utf-8,' + encodeURIComponent(qr);
+    const segredo = (en.totp && en.totp.secret) || '';
+    $('#mfaBox', v).innerHTML = `<div class="mfa-setup">
+      <ol class="passos"><li><b>Instale um app autenticador</b> no celular (Google Authenticator, Microsoft Authenticator ou Authy).</li>
+        <li><b>Escaneie o QR code</b> com o app${segredo ? ' ou digite a chave manualmente' : ''}.</li><li><b>Digite o código de 6 números</b> que aparece no app.</li></ol>
+      <div class="qr"><img src="${src}" alt="QR code para o app autenticador" width="180" height="180"></div>
+      ${segredo ? `<div class="chave"><code>${esc(segredo)}</code><button type="button" class="mini" id="copChave">Copiar</button></div>` : ''}
+      <form id="fmfa" class="mfa-form"><input class="field codigo" name="codigo" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000" required>
+        <button class="btn primary">Confirmar e ativar</button></form><p class="err" id="mfaErr"></p>
+      <button type="button" class="linkbtn" id="mfaCancel">Cancelar</button></div>`;
+    const cp = $('#copChave', v); if (cp) cp.onclick = () => { navigator.clipboard && navigator.clipboard.writeText(segredo); cp.textContent = 'Copiado!'; };
+    $('#mfaCancel', v).onclick = async () => { await sb.auth.mfa.unenroll({ factorId: en.id }); seguranca(v); };
+    const fm = $('#fmfa', v), c = fm.codigo;
+    c.addEventListener('input', () => { c.value = c.value.replace(/\D/g, '').slice(0, 6); });
+    fm.onsubmit = async (e) => {
+      e.preventDefault();
+      const { data: ch, error: e1 } = await sb.auth.mfa.challenge({ factorId: en.id });
+      const { error: e2 } = e1 ? { error: e1 } : await sb.auth.mfa.verify({ factorId: en.id, challengeId: ch.id, code: c.value });
+      if (e2) { $('#mfaErr', v).textContent = 'Código incorreto. Confira se o horário do celular está automático e tente o código novo.'; c.value = ''; c.focus(); return; }
+      if (DB.track) DB.track('2fa_ativado');
+      toast('🔐 2FA ativada! Sua conta está mais protegida.');
+      seguranca(v);
+    };
+    c.focus();
+  };
 }
 
 /* ---------- chamados ---------- */

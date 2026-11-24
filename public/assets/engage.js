@@ -310,3 +310,19 @@ if (!sessionStorage.getItem('jf-nudge')) {
   document.addEventListener('visibilitychange', () => { if (!document.hidden && pronto && JF.itens && JF.itens().length) mostrar('voltou'); });
 })();
 })();
+
+/* ---------- botão "Entrar / minha conta" no topo ---------- */
+(async () => {
+  const hr = document.querySelector('header .hright'); if (!hr || !DB.ativo) return;
+  const a = document.createElement('a'); a.className = 'conta-btn'; a.href = 'cliente.html';
+  a.innerHTML = '<span class="av">👤</span><span class="t">Entrar</span>'; a.setAttribute('aria-label', 'Entrar ou criar conta');
+  hr.insertBefore(a, hr.querySelector('#openCart'));
+  const c = await DB.client(); if (!c) return;
+  const { data: { session } } = await c.auth.getSession(); if (!session) return;
+  const meta = session.user.user_metadata || {};
+  const nome = meta.usuario ? '@' + meta.usuario : (meta.nome || session.user.email).split(/[\s@]/)[0];
+  a.querySelector('.t').textContent = nome; a.querySelector('.av').textContent = nome.replace('@', '')[0].toUpperCase();
+  a.classList.add('logado'); a.setAttribute('aria-label', 'Minha conta');
+  const prev = DB.ls.get('jf-cliente', {}) || {};
+  DB.ls.set('jf-cliente', { nome: prev.nome || meta.nome || '', email: session.user.email, whatsapp: prev.whatsapp || meta.whatsapp || '' });
+})();

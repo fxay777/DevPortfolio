@@ -22,6 +22,32 @@ const { data: ehAdmin } = await sb.rpc('is_admin');
 $('#hdrAct').innerHTML = `<a class="btn" href="index.html" target="_blank">Ver site ↗</a><button class="btn" id="sair">Sair</button>`;
 $('#sair').onclick = async () => { await sb.auth.signOut(); location.href = 'cliente.html'; };
 if (!ehAdmin) {
+  // é administrador, mas ainda não confirmou o 2FA neste login?
+  const { data: cad } = await sb.rpc('admin_cadastrado').then((r) => r, () => ({ data: false }));
+  if (cad) {
+    let aal = null; try { aal = (await sb.auth.mfa.getAuthenticatorAssuranceLevel()).data; } catch {}
+    if (aal && aal.nextLevel === 'aal2') {
+      app.innerHTML = `<div class="auth"><span class="eyebrow">Painel</span><h1>Confirme que é você</h1><p style="color:var(--muted)">Digite o código de 6 números do seu app autenticador.</p>
+        <form id="f2" style="display:grid;gap:12px;margin-top:20px"><input class="field codigo" name="c" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000" required autofocus>
+        <p class="err" id="e2"></p><button class="btn primary full">Entrar no painel</button></form></div>`;
+      const f = $('#f2'); f.c.addEventListener('input', () => { f.c.value = f.c.value.replace(/\D/g, '').slice(0, 6); if (f.c.value.length === 6) f.requestSubmit(); });
+      f.onsubmit = async (e) => {
+        e.preventDefault();
+        const { data: fs } = await sb.auth.mfa.listFactors();
+        const fac = ((fs && fs.totp) || []).find((x) => x.status === 'verified');
+        const { data: ch, error: e1 } = await sb.auth.mfa.challenge({ factorId: fac.id });
+        const { error: er } = e1 ? { error: e1 } : await sb.auth.mfa.verify({ factorId: fac.id, challengeId: ch.id, code: f.c.value });
+        if (er) { $('#e2').textContent = 'Código incorreto ou expirado.'; f.c.value = ''; return; }
+        location.reload();
+      };
+    } else {
+      app.innerHTML = `<div class="auth"><span class="eyebrow">Painel</span><h1>Ative o 2FA primeiro</h1>
+        <p class="note-box warn" style="margin-top:18px">Por segurança, o painel só abre com a <b>verificação em duas etapas</b> ativada, porque ele dá acesso aos dados de todos os clientes.</p>
+        <a class="btn primary full" style="margin-top:16px" href="cliente.html#seguranca">Ativar 2FA agora (2 minutos)</a>
+        <p style="color:var(--muted);font-size:.9rem;margin-top:12px">Depois de ativar, saia, entre de novo com o código e volte para o painel.</p></div>`;
+    }
+    return;
+  }
   app.innerHTML = `<div class="auth"><h1>Sem permissão</h1><p class="note-box warn" style="margin-top:18px">Você entrou como <b>${esc(session.user.email)}</b>, mas essa conta ainda não é administradora. No Supabase, abra o <b>SQL Editor</b> e rode:</p>
     <pre class="note-box" style="margin-top:12px;white-space:pre-wrap;font-size:.82rem">insert into public.admins (user_id) select id from auth.users where email = '${esc(session.user.email)}';</pre>
     <p style="color:var(--muted);margin-top:12px">Depois recarregue esta página.</p></div>`;
@@ -361,12 +387,12 @@ async function clientes(v) {
     tudo(() => sb.from('pedidos').select('email,user_id,valor_pago')),
   ]);
   v.innerHTML = `<p style="color:var(--muted);margin-bottom:14px">${perfis.length} contas criadas na Área do cliente.</p>
-    <div class="tbl"><table><thead><tr><th>Desde</th><th>Nome</th><th>E-mail</th><th>WhatsApp</th><th>Pedidos</th><th>Pago</th><th></th></tr></thead><tbody>
+    <div class="tbl"><table><thead><tr><th>Desde</th><th>Usuário</th><th>Nome</th><th>E-mail</th><th>WhatsApp</th><th>Pedidos</th><th>Pago</th><th></th></tr></thead><tbody>
     ${perfis.map((c) => {
       const meus = peds.filter((p) => p.user_id === c.id || (c.email && (p.email || '').toLowerCase() === c.email));
       const wa = fone(c.whatsapp);
-      return `<tr><td>${data(c.criado_em)}</td><td>${esc(c.nome || '—')}</td><td>${esc(c.email || '')}</td><td>${wa ? `<a class="link" target="_blank" rel="noopener" href="${waLink('Olá! Aqui é o Jackson.', wa)}">${esc(c.whatsapp)}</a>` : esc(c.whatsapp || '')}</td><td>${meus.length}</td><td>${brl(meus.reduce((a, p) => a + Number(p.valor_pago || 0), 0))}</td><td><button class="mini" data-arq="${c.id}" data-nome="${esc(c.nome || c.email || '')}">Arquivos</button></td></tr>`;
-    }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:40px">Nenhum cliente cadastrado ainda.</td></tr>'}</tbody></table></div>`;
+      return `<tr><td>${data(c.criado_em)}</td><td>${c.usuario ? '@' + esc(c.usuario) : '—'}</td><td>${esc(c.nome || '—')}</td><td>${esc(c.email || '')}</td><td>${wa ? `<a class="link" target="_blank" rel="noopener" href="${waLink('Olá! Aqui é o Jackson.', wa)}">${esc(c.whatsapp)}</a>` : esc(c.whatsapp || '')}</td><td>${meus.length}</td><td>${brl(meus.reduce((a, p) => a + Number(p.valor_pago || 0), 0))}</td><td><button class="mini" data-arq="${c.id}" data-nome="${esc(c.nome || c.email || '')}">Arquivos</button></td></tr>`;
+    }).join('') || '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:40px">Nenhum cliente cadastrado ainda.</td></tr>'}</tbody></table></div>`;
   $$('[data-arq]', v).forEach((b) => { b.onclick = () => arquivosDe(b.dataset.arq, b.dataset.nome); });
 }
 async function arquivosDe(uid, nome) {

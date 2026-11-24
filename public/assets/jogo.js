@@ -169,6 +169,9 @@ document.addEventListener('jf:evento', (e) => {
 // 7. abrir uma pergunta do FAQ
 document.addEventListener('toggle', (e) => { if (e.target.matches && e.target.matches('.faq details') && e.target.open) completa('faq'); }, true);
 
+// onda de choque ao clicar na forma principal
+document.addEventListener('jf:choque', () => { tom(90, 0.6, 'sine', 0.14); tom(180, 0.35, 'triangle', 0.05, 0.02); });
+
 /* ---------- dica para descobrir a caça ---------- */
 setTimeout(() => {
   if (S.caca || document.querySelector('dialog[open]')) return;
