@@ -53,9 +53,19 @@ language sql stable security definer set search_path = public as $$
 $$;
 grant execute on function public.usuario_disponivel(text) to anon, authenticated;
 alter table public.perfis enable row level security;
+-- o cliente lê e edita o próprio perfil, mas não pode apagar e recriar com outro usuário/e-mail
 drop policy if exists perfis_dono on public.perfis;
-create policy perfis_dono on public.perfis for all to authenticated
-  using (id = auth.uid() or public.is_admin()) with check (id = auth.uid() or public.is_admin());
+drop policy if exists perfis_ler on public.perfis;
+create policy perfis_ler on public.perfis for select to authenticated
+  using (id = (select auth.uid()) or public.is_admin());
+drop policy if exists perfis_criar on public.perfis;
+create policy perfis_criar on public.perfis for insert to authenticated
+  with check ((id = (select auth.uid()) and usuario is null and email is null) or public.is_admin());
+drop policy if exists perfis_editar on public.perfis;
+create policy perfis_editar on public.perfis for update to authenticated
+  using (id = (select auth.uid()) or public.is_admin()) with check (id = (select auth.uid()) or public.is_admin());
+drop policy if exists perfis_admin_del on public.perfis;
+create policy perfis_admin_del on public.perfis for delete to authenticated using (public.is_admin());
 
 -- o cliente não pode trocar o e-mail do perfil pelo site
 create or replace function public.perfil_protege() returns trigger language plpgsql set search_path = public as $$
