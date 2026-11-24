@@ -30,8 +30,8 @@
     // Supabase → Project Settings → API Keys. A "Publishable key" (sb_publishable_...)
     // pode ficar aqui: ela é pública e o banco é protegido pelas regras do schema.sql.
     // NUNCA coloque aqui a "Secret key".
-    supabaseUrl: '',
-    supabaseKey: '',
+    supabaseUrl: 'https://aborpbjapsglzeiojdpo.supabase.co',
+    supabaseKey: 'sb_publishable_VHCT7r5KtIUhXjMFou4xsg_cDVpIzx9',
   };
 
   // tipo: 'servico' (projeto) | 'extra' (adicional) ;  mensal: cobra por mês
