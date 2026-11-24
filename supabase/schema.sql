@@ -58,7 +58,7 @@ create policy perfis_dono on public.perfis for all to authenticated
   using (id = auth.uid() or public.is_admin()) with check (id = auth.uid() or public.is_admin());
 
 -- o cliente não pode trocar o e-mail do perfil pelo site
-create or replace function public.perfil_protege() returns trigger language plpgsql as $$
+create or replace function public.perfil_protege() returns trigger language plpgsql set search_path = public as $$
 begin
   if not public.is_admin() then new.email = old.email; new.id = old.id; new.usuario = old.usuario; end if;
   return new;
@@ -107,6 +107,7 @@ create table if not exists public.pedidos (
   atualizado_em timestamptz not null default now()
 );
 create index if not exists pedidos_email_idx on public.pedidos (lower(email));
+create index if not exists pedidos_user_idx on public.pedidos (user_id);
 alter table public.pedidos enable row level security;
 
 drop policy if exists pedidos_ler on public.pedidos;
@@ -219,7 +220,7 @@ drop policy if exists chamados_admin_del on public.chamados;
 create policy chamados_admin_del on public.chamados for delete to authenticated using (public.is_admin());
 
 -- o cliente só pode mudar o status do próprio chamado (fechar / reabrir)
-create or replace function public.chamado_protege() returns trigger language plpgsql as $$
+create or replace function public.chamado_protege() returns trigger language plpgsql set search_path = public as $$
 begin
   if not public.is_admin() then
     new.user_id = old.user_id; new.pedido_id = old.pedido_id; new.assunto = old.assunto; new.tipo = old.tipo; new.criado_em = old.criado_em;
@@ -314,10 +315,19 @@ create policy arquivos_apagar on storage.objects for delete to authenticated
   using (bucket_id = 'arquivos' and ((storage.foldername(name))[1] = auth.uid()::text or public.is_admin()));
 
 -- ---------- atualiza "atualizado_em" ----------
-create or replace function public.toca_atualizado() returns trigger language plpgsql as $$
+create or replace function public.toca_atualizado() returns trigger language plpgsql set search_path = public as $$
 begin new.atualizado_em = now(); return new; end $$;
 drop trigger if exists pedidos_toca on public.pedidos;
 create trigger pedidos_toca before update on public.pedidos for each row execute function public.toca_atualizado();
+
+-- ---------- segurança: funções internas não podem ser chamadas pelo site ----------
+revoke execute on function public.novo_usuario() from public, anon, authenticated;
+revoke execute on function public.msg_nova() from public, anon, authenticated;
+revoke execute on function public.perfil_protege() from public, anon, authenticated;
+revoke execute on function public.chamado_protege() from public, anon, authenticated;
+revoke execute on function public.toca_atualizado() from public, anon, authenticated;
+revoke execute on function public.admin_cadastrado() from public, anon;
+grant execute on function public.admin_cadastrado() to authenticated;
 
 -- =====================================================================
 -- DEPOIS de criar sua conta pelo site (cliente.html), rode SÓ esta linha

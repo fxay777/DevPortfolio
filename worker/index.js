@@ -19,7 +19,7 @@ const json = (obj, status = 200, extra = {}) =>
 
 /* ---------- Supabase pelo servidor ---------- */
 function banco(env) {
-  const URL_ = env.SUPABASE_URL, KEY = env.SUPABASE_SECRET_KEY || env.SUPABASE_SERVICE_ROLE_KEY;
+  const URL_ = env.SUPABASE_URL || CONFIG.supabaseUrl, KEY = env.SUPABASE_SECRET_KEY || env.SUPABASE_SERVICE_ROLE_KEY;
   const ativo = !!(URL_ && KEY);
   async function rest(path, { method = 'GET', body, prefer } = {}) {
     if (!ativo) return null;
